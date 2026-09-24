@@ -1,0 +1,4 @@
+gerado/
+*.tokens
+*.interp
+__pycache__/

@@ -1,0 +1,4 @@
+circuito "atraso ruim";
+entrada A, B;
+saida S;
+S = A E B @atraso 2.;

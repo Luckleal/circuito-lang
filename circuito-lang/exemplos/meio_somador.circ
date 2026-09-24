@@ -1,0 +1,8 @@
+// meio somador: soma dois bits
+circuito "meio somador";
+
+entrada A, B;
+saida soma, vaiUm;
+
+soma = A XOR B;
+vaiUm = A E B;

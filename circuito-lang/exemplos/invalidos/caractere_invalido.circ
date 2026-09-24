@@ -1,0 +1,4 @@
+circuito "teste";
+entrada A, B;
+saida S;
+S = A & B;

@@ -1,0 +1,7 @@
+// usa barramento, indices e parenteses
+circuito "monitor de barramento";
+
+entrada dados[4];
+saida ativo;
+
+ativo = (dados[0] OU dados[1]) E NAO dados[3];

@@ -1,0 +1,9 @@
+// combina tres entradas usando um fio intermediario
+circuito "detector";
+
+entrada A, B, C;
+fio t1;
+saida S;
+
+t1 = A E B;
+S = t1 OU NAO C @atraso 3.0;

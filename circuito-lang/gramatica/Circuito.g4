@@ -1,4 +1,36 @@
-lexer grammar Circuito;
+grammar Circuito;
+
+// ##################### REGRAS DE PARSER (E3) #####################
+// Regras de parser comecam com minuscula; tokens (lexer) com MAIUSCULA.
+
+programa   : cabecalho instrucao* EOF ;
+
+cabecalho  : CIRCUITO TEXTO PONTOVIRG ;
+
+instrucao  : declaracao
+           | ligacao
+           ;
+
+declaracao : (ENTRADA | SAIDA | FIO) sinal (VIRGULA sinal)* PONTOVIRG ;
+
+ligacao    : sinal ATRIB expr anotacao? PONTOVIRG ;
+
+anotacao   : ARROBA ATRASO REAL ;
+
+// nome simples ou posicao de barramento (dados[0]); na declaracao, a largura (dados[4])
+sinal      : IDENT (ACOL INT FCOL)? ;
+
+// A ordem das alternativas define a precedencia: a declarada antes liga mais forte.
+// Binarios associam a esquerda (padrao do ANTLR).
+expr       : NAO expr                            // mais forte
+           | expr (E | NE) expr
+           | expr (OU | NOU | XOR | XNOR) expr   // mais fraco
+           | APAR expr FPAR
+           | sinal
+           | INT                                 // constantes 0 e 1 (restricao: semantica, E4)
+           ;
+
+// ##################### REGRAS DE LEXER (E2) #####################
 
 // ================= PALAVRAS-CHAVE =================
 // Precisam vir ANTES de IDENT: em empate de tamanho, vence a regra definida primeiro.

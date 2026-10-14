@@ -20,10 +20,7 @@ sys.path.insert(0, CAMINHO_GERADO)
 from antlr4 import FileStream, Token
 from antlr4.error.ErrorListener import ErrorListener
 
-# A gramatica e "lexer grammar Circuito;" (gramatica/Circuito.g4). Para uma
-# gramatica so de lexer, o ANTLR nomeia a classe gerada igual ao nome da
-# gramatica, sem sufixo "Lexer" (gerado/Circuito.py, classe Circuito).
-from Circuito import Circuito as CircuitoLexer
+from CircuitoLexer import CircuitoLexer
 
 
 class OuvidorDeErros(ErrorListener):

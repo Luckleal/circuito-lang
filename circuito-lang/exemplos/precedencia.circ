@@ -1,0 +1,7 @@
+// mostra a precedencia: NAO liga mais forte que E, que liga mais forte que OU
+circuito "precedencia";
+
+entrada A, B, C;
+saida S;
+
+S = NAO A OU B E C;

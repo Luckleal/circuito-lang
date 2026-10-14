@@ -25,13 +25,14 @@ Veja a especificação completa em [docs/especificacao.md](docs/especificacao.md
 pip install antlr4-tools antlr4-python3-runtime
 bash gerar.sh
 python src/lexico.py exemplos/meio_somador.circ
+python src/sintatico.py exemplos/meio_somador.circ
 ```
 
-`gerar.sh` gera o lexer em `gerado/` a partir de `gramatica/Circuito.g4` (pasta não versionada). `src/lexico.py` lê um arquivo `.circ`, lista os tokens reconhecidos e aponta erros léxicos com linha e coluna.
+`gerar.sh` gera o lexer e o parser em `gerado/` a partir de `gramatica/Circuito.g4` (pasta não versionada). `src/lexico.py` lê um arquivo `.circ`, lista os tokens reconhecidos e aponta erros léxicos com linha e coluna. `src/sintatico.py` roda o parser a partir da regra `programa`, imprime a árvore sintática e aponta erros sintáticos com linha e coluna (se houver erro léxico, reporta e não tenta parsear).
 
 ## 3. Em que fase o projeto está
 
-**E2: especificação da linguagem e analisador léxico.** Não há, ainda, parser, árvore sintática, análise semântica nem simulação — isso é das entregas E3 e E4.
+**E3: especificação, analisador léxico e analisador sintático (parser).** Ainda não há análise semântica nem simulação — isso é da entrega E4.
 
 ## 4. Como rodar os testes
 
@@ -39,7 +40,13 @@ python src/lexico.py exemplos/meio_somador.circ
 bash testar.sh
 ```
 
-O script roda `src/lexico.py` em todos os arquivos de `exemplos/` (devem sair com código 0) e de `exemplos/invalidos/` (devem sair com código 1), imprime `OK`/`FALHOU` por arquivo e um resumo (`N/N testes passaram`) no final.
+O script roda `src/lexico.py` e `src/sintatico.py` em todos os exemplos e confere o código de saída:
+
+- `exemplos/*.circ` (válidos): os dois saem com 0.
+- `exemplos/invalidos/*.circ` (erro léxico): os dois saem com 1.
+- `exemplos/invalidos_sintaticos/*.circ` (léxico ok, erro sintático): o léxico sai com 0 e o sintático com 1.
+
+Imprime `OK`/`FALHOU` por teste e um resumo (`N/N testes passaram`) no final.
 
 ## 5. Versões do ANTLR e do runtime
 
@@ -50,19 +57,16 @@ As duas versões precisam ser sempre a mesma.
 
 ## 6. Testar a gramática sem gerar código
 
-O comando documentado pelo ANTLR para interpretar uma gramática sem gerar código é:
+Agora que a gramática tem regras de parser, o `antlr4-parse` funciona. Para ver a árvore de um arquivo inteiro:
 
 ```bash
-antlr4-parse gramatica/Circuito.g4 tokens -tokens exemplos/meio_somador.circ
+antlr4-parse gramatica/Circuito.g4 programa -tree exemplos/precedencia.circ
 ```
 
-Na prática, esse comando **não funciona** nesta versão (ANTLR 4.13.2) para uma gramática somente de lexer: ele falha com
-`ClassCastException: ... IgnoreTokenVocabGrammar cannot be cast to ... LexerGrammar`.
-É um bug conhecido e ainda aberto da ferramenta (issue [antlr/antlr4-tools#17](https://github.com/antlr/antlr4-tools/issues/17)), não um erro da gramática `Circuito.g4`.
-
-Por isso, a validação real da gramática nesta etapa é feita gerando o código e testando com os próprios exemplos:
+O terceiro argumento pode ser qualquer regra, o que permite testar uma regra por vez, por exemplo `expr`:
 
 ```bash
-bash gerar.sh
-bash testar.sh
+echo "NAO A OU B E C" | antlr4-parse gramatica/Circuito.g4 expr -tree
 ```
+
+Observação: na E2, quando a gramática era só de lexer (`lexer grammar`), esse comando falhava com `ClassCastException` por um bug conhecido do ANTLR 4.13.2 (issue [antlr/antlr4-tools#17](https://github.com/antlr/antlr4-tools/issues/17)). Com a gramática combinada (`grammar Circuito;`) o problema não ocorre.

@@ -52,7 +52,7 @@ Da maior para a menor:
 
 Os binários associam à esquerda, e parênteses alteram a ordem. Outros símbolos: `=` (ligação), `[ ]` (índice de barramento), `@` (anotação), `,` (separador de lista), `;` (fim de instrução).
 
-Observação: nesta etapa a precedência é uma decisão de projeto; ela será aplicada pelo parser na E3.
+Observação: a precedência é uma decisão de projeto, aplicada pelo parser (E3): a ordem das alternativas da regra `expr` em `gramatica/Circuito.g4` implementa esta tabela. Por exemplo, `NAO A OU B E C` é lido como `(NAO A) OU (B E C)`.
 
 ## 6. Comentários
 
@@ -63,3 +63,30 @@ De linha, começando com `//` e indo até o fim da linha. São descartados pelo 
 - Não descreve circuitos sequenciais: não há memória, flip-flops, clock nem estado, apenas lógica combinacional.
 - Não permite usar nomes de portas ou palavras-chave (`E`, `OU`, `NAO`, `entrada`...) como nomes de sinais, pois são reservados.
 - Não tem laços, condicionais, sub-rotinas nem aritmética. Ela descreve um circuito estático, não é uma linguagem de propósito geral.
+
+## 8. Gramática sintática (E3)
+
+Regras de parser em `gramatica/Circuito.g4` (EBNF: `*` zero ou mais, `?` opcional, `|` alternativa):
+
+```
+programa   : cabecalho instrucao* EOF
+cabecalho  : 'circuito' TEXTO ';'
+instrucao  : declaracao | ligacao
+declaracao : ('entrada' | 'saida' | 'fio') sinal (',' sinal)* ';'
+ligacao    : sinal '=' expr anotacao? ';'
+anotacao   : '@' 'atraso' REAL
+sinal      : IDENT ('[' INT ']')?
+expr       : 'NAO' expr
+           | expr ('E' | 'NE') expr
+           | expr ('OU' | 'NOU' | 'XOR' | 'XNOR') expr
+           | '(' expr ')'
+           | sinal
+           | INT
+```
+
+Decisões de projeto:
+
+- Declarações e ligações podem aparecer em qualquer ordem depois do cabeçalho. A regra "declarar antes de usar" é verificada na análise semântica (E4), não pelo parser.
+- Constantes em expressões são `INT`; a restrição a `0` e `1` também fica para a análise semântica.
+- `@atraso` aceita apenas número real (`3.0`, não `3`).
+- A regra inicial termina em `EOF`, então nenhum texto sobrando no fim do arquivo é ignorado em silêncio.

@@ -1,4 +1,5 @@
-gerado/
+generated/
 *.tokens
 *.interp
 __pycache__/
+.pytest_cache/

@@ -1,0 +1,4 @@
+circuit "bad delay";
+input A, B;
+output S;
+S = A AND B @delay 2.;

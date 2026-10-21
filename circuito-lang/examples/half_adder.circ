@@ -1,0 +1,8 @@
+// half adder: adds two bits
+circuit "half adder";
+
+input A, B;
+output sum, carry;
+
+sum = A XOR B;
+carry = A AND B;

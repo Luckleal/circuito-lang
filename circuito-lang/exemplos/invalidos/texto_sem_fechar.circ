@@ -1,4 +1,0 @@
-circuito "meio somador;
-entrada A, B;
-saida S;
-S = A E B;

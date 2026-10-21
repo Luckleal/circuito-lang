@@ -1,6 +1,6 @@
-# Diário de bordo
+# Logbook
 
-Uma entrada por sessão de trabalho: data, o que foi tentado, o que aconteceu.
+One entry per work session: date, what was tried, what happened.
 
 ## DD/MM
-(o que tentamos / o que deu errado / o que decidimos)
+(what we tried / what went wrong / what we decided)

@@ -1,0 +1,7 @@
+// uses a bus, indices and parentheses
+circuit "bus monitor";
+
+input data[4];
+output active;
+
+active = (data[0] OR data[1]) AND NOT data[3];

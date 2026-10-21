@@ -1,0 +1,9 @@
+// combines three inputs using an intermediate wire
+circuit "detector";
+
+input A, B, C;
+wire t1;
+output S;
+
+t1 = A AND B;
+S = t1 OR NOT C @delay 3.0;

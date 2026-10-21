@@ -1,0 +1,7 @@
+// shows precedence: NOT binds tighter than AND, which binds tighter than OR
+circuit "precedence";
+
+input A, B, C;
+output S;
+
+S = NOT A OR B AND C;

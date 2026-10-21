@@ -1,72 +1,106 @@
-# Circuito
+# Circuit
 
-## 1. Que linguagem é essa
+## 1. What this language is
 
-`Circuito` é uma linguagem para descrever **circuitos lógicos combinacionais**: um programa declara entradas, saídas e fios internos, e escreve equações booleanas que ligam esses sinais por portas lógicas (`E`, `OU`, `NAO`, `XOR`, `NE`, `NOU`, `XNOR`).
+`Circuit` is a language for describing **combinational logic circuits**: a program declares inputs, outputs and internal wires, and writes boolean equations that connect those signals through logic gates (`AND`, `OR`, `NOT`, `XOR`, `NAND`, `NOR`, `XNOR`).
 
-Exemplo (`exemplos/meio_somador.circ`):
+Example (`examples/half_adder.circ`):
 
 ```
-// meio somador: soma dois bits
-circuito "meio somador";
+// half adder: adds two bits
+circuit "half adder";
 
-entrada A, B;
-saida soma, vaiUm;
+input A, B;
+output sum, carry;
 
-soma = A XOR B;
-vaiUm = A E B;
+sum = A XOR B;
+carry = A AND B;
 ```
 
-Veja a especificação completa em [docs/especificacao.md](docs/especificacao.md).
+See the full specification in [docs/specification.md](docs/specification.md).
 
-## 2. Como instalar e rodar
+## 2. How to install and run
 
 ```bash
-pip install antlr4-tools antlr4-python3-runtime
-bash gerar.sh
-python src/lexico.py exemplos/meio_somador.circ
-python src/sintatico.py exemplos/meio_somador.circ
+pip install -r requirements.txt
+bash generate.sh
+python src/lexical.py examples/half_adder.circ
+python src/syntactic.py examples/half_adder.circ
 ```
 
-`gerar.sh` gera o lexer e o parser em `gerado/` a partir de `gramatica/Circuito.g4` (pasta não versionada). `src/lexico.py` lê um arquivo `.circ`, lista os tokens reconhecidos e aponta erros léxicos com linha e coluna. `src/sintatico.py` roda o parser a partir da regra `programa`, imprime a árvore sintática e aponta erros sintáticos com linha e coluna (se houver erro léxico, reporta e não tenta parsear).
+`generate.sh` generates the lexer and the parser in `generated/` (not versioned) from `grammar/Circuit.g4`.
 
-## 3. Em que fase o projeto está
+- `src/lexical.py` reads a `.circ` file, lists the recognized tokens and reports lexical errors with line and column.
+- `src/syntactic.py` parses the file from the `program` rule, prints the syntax tree and reports syntax errors with line and column. If there are lexical errors, it reports them and does not parse.
 
-**E3: especificação, analisador léxico e analisador sintático (parser).** Ainda não há análise semântica nem simulação — isso é da entrega E4.
+Exit codes of both programs: `0` no errors, `1` errors found, `2` usage error or unreadable file.
 
-## 4. Como rodar os testes
+### Interactive mode: type an expression and see the analysis
 
 ```bash
-bash testar.sh
+python src/interactive.py
 ```
 
-O script roda `src/lexico.py` e `src/sintatico.py` em todos os exemplos e confere o código de saída:
+It prompts with `circuit>`, you type a boolean expression, and it shows the tokens, the syntax tree and the fully parenthesized grouping (which makes the precedence visible), or the error with line and column:
 
-- `exemplos/*.circ` (válidos): os dois saem com 0.
-- `exemplos/invalidos/*.circ` (erro léxico): os dois saem com 1.
-- `exemplos/invalidos_sintaticos/*.circ` (léxico ok, erro sintático): o léxico sai com 0 e o sintático com 1.
+```
+circuit> NOT A OR B AND C
+Tokens:
+  NOT       'NOT'  (column 1)
+  ...
+Grouped: ((NOT A) OR (B AND C))
 
-Imprime `OK`/`FALHOU` por teste e um resumo (`N/N testes passaram`) no final.
+circuit> A OR
+Syntax error at line 1, column 5: found end of file, expected {'NOT', INT, IDENT, '('}
+```
 
-## 5. Versões do ANTLR e do runtime
+Commands: `:help` and `:quit` (also `:q`, Ctrl+D or Ctrl+C). To analyze a single expression and exit (exit code 0 if valid, 1 if not):
+
+```bash
+python src/interactive.py "NOT A OR B AND C"
+```
+
+## 3. Project status
+
+**Lexical analyzer and syntactic analyzer (parser).** There is no semantic analysis or simulation yet.
+
+## 4. How to run the tests
+
+```bash
+python -m pytest
+```
+
+The test suite lives in `tests/` and needs `generated/` to exist (run `bash generate.sh` first):
+
+| File | What it covers |
+| --- | --- |
+| `tests/test_lexer.py` | tokens, keywords vs identifiers, literals, comments, positions, the three lexical errors |
+| `tests/test_parser.py` | valid programs, precedence and associativity, parentheses, syntax errors with line and column, message translation |
+| `tests/test_cli.py` | both programs as real commands: output format, exit codes, stdout vs stderr, missing file, any working directory, CRLF and non-ASCII input |
+| `tests/test_examples.py` | every file in `examples/`, with the expected result and error position |
+| `tests/test_interactive.py` | the interactive analyzer: output, errors, one-shot mode and piped sessions |
+
+Useful options: `python -m pytest -v` (one line per test), `python -m pytest tests/test_parser.py -k precedence` (a subset).
+
+The `examples/` folder holds the programs the tests run on: valid programs at the top, `invalid_lexical/` (lexical errors) and `invalid_syntax/` (lexically correct, syntactically wrong).
+
+## 5. ANTLR and runtime versions
 
 - `antlr4-python3-runtime`: **4.13.2**
-- Gerador ANTLR (`antlr4 -v 4.13.2 ...`, fixado em `gerar.sh`): **4.13.2**
+- ANTLR generator (`antlr4 -v 4.13.2 ...`, pinned in `generate.sh`): **4.13.2**
 
-As duas versões precisam ser sempre a mesma.
+The two versions must always be the same.
 
-## 6. Testar a gramática sem gerar código
+## 6. Testing the grammar without generating code
 
-Agora que a gramática tem regras de parser, o `antlr4-parse` funciona. Para ver a árvore de um arquivo inteiro:
-
-```bash
-antlr4-parse gramatica/Circuito.g4 programa -tree exemplos/precedencia.circ
-```
-
-O terceiro argumento pode ser qualquer regra, o que permite testar uma regra por vez, por exemplo `expr`:
+`antlr4-parse` interprets the grammar directly. To see the tree of a whole file:
 
 ```bash
-echo "NAO A OU B E C" | antlr4-parse gramatica/Circuito.g4 expr -tree
+antlr4-parse grammar/Circuit.g4 program -tree examples/precedence.circ
 ```
 
-Observação: na E2, quando a gramática era só de lexer (`lexer grammar`), esse comando falhava com `ClassCastException` por um bug conhecido do ANTLR 4.13.2 (issue [antlr/antlr4-tools#17](https://github.com/antlr/antlr4-tools/issues/17)). Com a gramática combinada (`grammar Circuito;`) o problema não ocorre.
+The third argument can be any rule, which allows testing one rule at a time, for example `expr`:
+
+```bash
+echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
+```

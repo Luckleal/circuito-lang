@@ -6,7 +6,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-81_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-202_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Stage](https://img.shields.io/badge/stage-lexer_+_parser-2EA44F?style=flat-square)
 
 [The language](#the-language) ·
@@ -17,7 +17,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 [Interactive mode](#interactive-mode) ·
 [Tests](#tests) ·
 [Status](#project-status) ·
-[Specification](circuito-lang/docs/specification.md)
+[Specification](docs/specification.md)
 
 <b>English</b> · <a href="README.pt-BR.md">Português</a><br>
 <sub>Formal Languages and Compilers · semester project · by Lucas Leal and Jonas Gabriel</sub>
@@ -91,7 +91,7 @@ S = t1 OR NOT C @delay 3.0;
 - **No gate names or keywords as signal names.** `AND`, `OR`, `NOT`, `input`... are reserved.
 - **No loops, conditionals, subroutines or arithmetic.** It describes a static circuit and is not a general-purpose language.
 
-The full specification, with the commented example, types and grammar, is in [docs/specification.md](circuito-lang/docs/specification.md).
+The full specification, with the commented example, types and grammar, is in [docs/specification.md](docs/specification.md).
 
 ## Install and run
 
@@ -99,7 +99,7 @@ Requires Python 3. The first run of `antlr4` downloads Java automatically if it 
 
 ```bash
 git clone https://github.com/Luckleal/circuito-lang.git
-cd circuito-lang/circuito-lang
+cd circuito-lang
 
 pip install -r requirements.txt
 bash generate.sh
@@ -202,7 +202,7 @@ python src/interactive.py "NOT A OR B AND C"
 python -m pytest
 ```
 
-81 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
+202 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
 
 | File | What it covers |
 |---|---|
@@ -242,6 +242,8 @@ There is no semantic analysis or simulation yet. Checks such as declare-before-u
 
 ```
 circuito-lang/
+├── README.md · README.pt-BR.md
+├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      lexer and parser rules
 ├── generate.sh             regenerates the ANTLR code into generated/
 ├── src/                    lexical.py · syntactic.py · interactive.py

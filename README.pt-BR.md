@@ -6,7 +6,7 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-81_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-202_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Etapa](https://img.shields.io/badge/etapa-lexer_+_parser-2EA44F?style=flat-square)
 
 [A linguagem](#a-linguagem) ·
@@ -17,7 +17,7 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 [Modo interativo](#modo-interativo) ·
 [Testes](#testes) ·
 [Status](#status-do-projeto) ·
-[Especificação](circuito-lang/docs/specification.md)
+[Especificação](docs/specification.md)
 
 <a href="README.md">English</a> · <b>Português</b><br>
 <sub>Linguagens Formais e Compiladores · projeto do semestre · por Lucas Leal e Jonas Gabriel</sub>
@@ -94,7 +94,7 @@ S = t1 OR NOT C @delay 3.0;
 - **Sem nomes de portas ou palavras-chave como nomes de sinais.** `AND`, `OR`, `NOT`, `input`... são reservados.
 - **Sem laços, condicionais, sub-rotinas nem aritmética.** Ela descreve um circuito estático e não é uma linguagem de propósito geral.
 
-A especificação completa, com o exemplo comentado, os tipos e a gramática, está em [docs/specification.md](circuito-lang/docs/specification.md) (em inglês).
+A especificação completa, com o exemplo comentado, os tipos e a gramática, está em [docs/specification.md](docs/specification.md) (em inglês).
 
 ## Instalar e rodar
 
@@ -102,7 +102,7 @@ Requer Python 3. Na primeira execução, o `antlr4` baixa o Java automaticamente
 
 ```bash
 git clone https://github.com/Luckleal/circuito-lang.git
-cd circuito-lang/circuito-lang
+cd circuito-lang
 
 pip install -r requirements.txt
 bash generate.sh
@@ -205,7 +205,7 @@ python src/interactive.py "NOT A OR B AND C"
 python -m pytest
 ```
 
-81 testes em `tests/`. Eles precisam do `generated/`, então rode `bash generate.sh` antes.
+202 testes em `tests/`. Eles precisam do `generated/`, então rode `bash generate.sh` antes.
 
 | Arquivo | O que cobre |
 |---|---|
@@ -245,6 +245,8 @@ Ainda não há análise semântica nem simulação. Verificações como declarar
 
 ```
 circuito-lang/
+├── README.md · README.pt-BR.md
+├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      regras de lexer e de parser
 ├── generate.sh             regenera o código do ANTLR em generated/
 ├── src/                    lexical.py · syntactic.py · interactive.py

@@ -5,13 +5,9 @@ Usage: python src/lexical.py path/to/file.circ
 
 Exit codes: 0 = no errors, 1 = lexical errors, 2 = usage error or unreadable file.
 """
-import os
 import sys
 
-# Resolve generated/ from this file's location, not the current directory,
-# so the script works from anywhere.
-SRC_DIR = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.join(SRC_DIR, "..", "generated"))
+import generated_path  # noqa: F401  (puts generated/ on sys.path)
 
 from antlr4 import InputStream, Token
 from antlr4.error.ErrorListener import ErrorListener

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Syntactic analyzer (parser driver) for the Circuit language.
 
-Usage: python src/syntactic.py path/to/file.circ
+Usage: python src/syntactic.py [--ast] path/to/file.circ
 
 Runs the lexer first; on lexical errors it reports them and stops (no parsing,
 to avoid cascading false errors). Otherwise it parses from the `program` rule
-and prints the indented syntax tree.
+and prints the indented syntax tree, or with --ast the abstract syntax tree.
 
 Exit codes: 0 = no errors, 1 = lexical or syntax errors, 2 = usage error or unreadable file.
 """
@@ -20,6 +20,8 @@ from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
 from antlr4.tree.Tree import TerminalNode
 
+from ast_builder import build_ast
+from ast_nodes import format_ast
 from CircuitLexer import CircuitLexer
 from CircuitParser import CircuitParser
 
@@ -81,22 +83,6 @@ def parse(text, rule="program"):
     return ParseResult(tree=tree, parser=parser, syntax_errors=syntax_errors)
 
 
-def parenthesize(expr):
-    """Fully parenthesized form of an `expr` tree, e.g. '((NOT A) OR (B AND C))'.
-
-    Makes the precedence and associativity chosen by the parser visible.
-    """
-    if expr.NOT():
-        return f"(NOT {parenthesize(expr.expr(0))})"
-    if expr.LPAREN():
-        return parenthesize(expr.expr(0))
-    if expr.signal():
-        return expr.signal().getText()
-    if expr.INT():
-        return expr.INT().getText()
-    return f"({parenthesize(expr.expr(0))} {expr.getChild(1).getText()} {parenthesize(expr.expr(1))})"
-
-
 def format_tree(node, parser, level=0):
     """Return the syntax tree as indented lines (rules are inner nodes, tokens are leaves)."""
     indent = "  " * level
@@ -115,13 +101,16 @@ def main(argv):
     sys.stdout.reconfigure(encoding="utf-8")
     sys.stderr.reconfigure(encoding="utf-8")
 
-    if len(argv) != 2:
-        print("Usage: python src/syntactic.py path/to/file.circ", file=sys.stderr)
+    args = argv[1:]
+    show_ast = "--ast" in args
+    paths = [a for a in args if a != "--ast"]
+    if len(paths) != 1:
+        print("Usage: python src/syntactic.py [--ast] path/to/file.circ", file=sys.stderr)
         return 2
 
-    text = read_source(argv[1])
+    text = read_source(paths[0])
     if text is None:
-        print(f"Error: could not open file '{argv[1]}'.", file=sys.stderr)
+        print(f"Error: could not open file '{paths[0]}'.", file=sys.stderr)
         return 2
 
     result = parse(text)
@@ -141,7 +130,10 @@ def main(argv):
         print(f"{len(result.syntax_errors)} syntax errors found", file=sys.stderr)
         return 1
 
-    print("\n".join(format_tree(result.tree, result.parser)))
+    if show_ast:
+        print("\n".join(format_ast(build_ast(result.tree))))
+    else:
+        print("\n".join(format_tree(result.tree, result.parser)))
     print("Syntactic analysis completed with no errors")
     return 0
 

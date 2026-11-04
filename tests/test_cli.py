@@ -38,7 +38,7 @@ def test_lexical_errors_go_to_stderr_with_exit_code_1():
     result = run_cli("lexical.py", bad)
     assert result.returncode == 1
     assert "Lexical error at line 4, column 7: invalid character '&'" in result.stderr
-    assert "1 lexical errors found" in result.stderr
+    assert "1 lexical error found" in result.stderr
     assert "Lexical error" not in result.stdout
 
 
@@ -107,8 +107,8 @@ def test_syntactic_error_goes_to_stderr_with_exit_code_1():
     bad = EXAMPLES / "invalid_syntax" / "missing_semicolon.circ"
     result = run_cli("syntactic.py", bad)
     assert result.returncode == 1
-    assert "Syntax error at line 5, column 1: found end of file" in result.stderr
-    assert "1 syntax errors found" in result.stderr
+    assert "Syntax error at line 5, column 1: expected '@' or ';', found end of file" in result.stderr
+    assert "1 syntax error found" in result.stderr
     assert "completed" not in result.stdout
 
 

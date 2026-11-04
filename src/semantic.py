@@ -17,7 +17,7 @@ from typing import Dict, List, Optional
 
 from ast_builder import build_ast
 from ast_nodes import Assignment, BinaryOp, Constant, Declaration, Not, Signal
-from lexical import read_source
+from lexical import plural, read_source
 from syntactic import parse
 
 
@@ -325,7 +325,7 @@ def main(argv):
         messages = parsed.lexical_errors or parsed.syntax_errors
         for message in messages:
             print(message, file=sys.stderr)
-        print(f"{len(messages)} {kind} errors found (semantic analysis not run)", file=sys.stderr)
+        print(f"{plural(len(messages), kind + ' error')} found (semantic analysis not run)", file=sys.stderr)
         return 1
 
     program = build_ast(parsed.tree)
@@ -337,7 +337,7 @@ def main(argv):
 
     if result.errors:
         print(
-            f"{len(result.errors)} semantic errors found ({len(result.warnings)} warnings)",
+            f"{plural(len(result.errors), 'semantic error')} found ({plural(len(result.warnings), 'warning')})",
             file=sys.stderr,
         )
         return 1
@@ -350,7 +350,7 @@ def main(argv):
             print(f"  {format_equation(statement)}")
     summary = "Semantic analysis completed with no errors"
     if result.warnings:
-        summary += f" ({len(result.warnings)} warnings)"
+        summary += f" ({plural(len(result.warnings), 'warning')})"
     print(summary)
     return 0
 

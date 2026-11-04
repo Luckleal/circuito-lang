@@ -1,0 +1,11 @@
+// the slowest route from an input to an output decides when the circuit settles
+circuit "delays";
+
+input A, B, C;
+output S, T;
+wire x, y;
+
+x = A AND B @delay 1.5;
+y = x OR C @delay 2.0;
+S = NOT y @delay 0.5;
+T = B XOR C @delay 1.0;

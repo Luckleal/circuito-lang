@@ -29,7 +29,7 @@ def test_token_columns_are_one_based(capsys):
 def test_syntax_error_is_reported_without_a_tree(capsys):
     assert interactive.analyze("A OR") is False
     captured = capsys.readouterr()
-    assert "Syntax error at line 1, column 5: found end of file" in captured.err
+    assert "Syntax error at line 1, column 5: expected an expression, found end of file" in captured.err
     assert "Syntax tree:" not in captured.out
     assert "Grouped:" not in captured.out
 
@@ -43,7 +43,7 @@ def test_lexical_error_is_reported_without_a_tree(capsys):
 
 def test_trailing_text_is_not_silently_ignored(capsys):
     assert interactive.analyze("A OR B C") is False
-    assert "unexpected symbol 'C'" in capsys.readouterr().err
+    assert "expected end of file, found 'C'" in capsys.readouterr().err
 
 
 # ---------- one-shot mode: real subprocess ----------
@@ -81,7 +81,7 @@ def test_session_continues_after_an_error():
     result = run_cli("interactive.py", stdin="A &\n(A OR B\nA AND B\n:q\n")
     assert result.returncode == 0
     assert "invalid character '&'" in result.stderr
-    assert "missing ')'" in result.stderr
+    assert "expected ')', found end of file" in result.stderr
     assert "Grouped: (A AND B)" in result.stdout
 
 

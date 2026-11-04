@@ -1,0 +1,5 @@
+circuit "test";
+input A, B;
+wire A;
+output S;
+S = A AND B;

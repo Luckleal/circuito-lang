@@ -1,0 +1,4 @@
+circuit "test";
+input data[0];
+output S;
+S = 1;

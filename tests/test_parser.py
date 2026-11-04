@@ -3,7 +3,10 @@ import pytest
 
 from helpers import EXAMPLES
 from ast_builder import build_ast
-from syntactic import format_tree, parse, translate
+from CircuitParser import CircuitParser
+from error_strategy import describe_expected, describe_found, syntax_message
+from lexical import tokenize
+from syntactic import format_tree, parse
 
 
 def sexpr(expr_ctx):
@@ -134,31 +137,29 @@ def test_bus_elements_in_expressions():
 
 # ---------- syntax errors ----------
 
-@pytest.mark.parametrize("source, line, column, fragment", [
-    ("input A;", 1, 1, "found 'input', expected 'circuit'"),
-    ('circuit "t"\ninput A;', 2, 1, "missing ';'"),
-    ('circuit "t";\ninput ;', 2, 7, "missing IDENT before ';'"),
-    ('circuit "t";\ninput A, ;', 2, 10, "missing IDENT before ';'"),
-    ('circuit "t";\ninput AND;', 2, 7, "found 'AND', expected IDENT"),
-    ('circuit "t";\ninput input;', 2, 7, "found 'input', expected IDENT"),
-    ('circuit "t";\ninput data[A];', 2, 12, "expected INT"),
-    ('circuit "t";\ninput A', 2, 8, "found end of file, expected {',', ';'}"),
-    ('circuit "t";\noutput S;\nS = ;', 3, 5, "found ';'"),
-    ('circuit "t";\noutput S;\nS = A AND ;', 3, 11, "found ';'"),
-    ('circuit "t";\noutput S;\nS = (A AND B;', 3, 13, "missing ')' before ';'"),
-    ('circuit "t";\noutput S;\nS = A AND B @delay 3;', 3, 20, "expected REAL"),
-    ('circuit "t";\noutput S;\nS = A AND B @ 3.0;', 3, 15, "missing 'delay' before '3.0'"),
-    ('circuit "t";\noutput S;\nS A;', 3, 3, "missing '=' before 'A'"),
-    ('circuit "t";\noutput S;\nS = A;\n)', 4, 1, "unexpected symbol ')'"),
-    ('circuit "t";\ncircuit "u";', 2, 1, "found 'circuit', expected {end of file"),
+@pytest.mark.parametrize("source, line, column, message", [
+    ("input A;", 1, 1, "expected 'circuit', found 'input'"),
+    ('circuit "t"\ninput A;', 2, 1, "expected ';', found 'input'"),
+    ('circuit "t";\ninput ;', 2, 7, "expected identifier, found ';'"),
+    ('circuit "t";\ninput A, ;', 2, 10, "expected identifier, found ';'"),
+    ('circuit "t";\ninput AND;', 2, 7, "expected identifier, found 'AND'"),
+    ('circuit "t";\ninput input;', 2, 7, "expected identifier, found 'input'"),
+    ('circuit "t";\ninput data[A];', 2, 12, "expected integer, found 'A'"),
+    ('circuit "t";\ninput A', 2, 8, "expected ',' or ';', found end of file"),
+    ('circuit "t";\noutput S;\nS = ;', 3, 5, "expected an expression, found ';'"),
+    ('circuit "t";\noutput S;\nS = A AND ;', 3, 11, "expected an expression, found ';'"),
+    ('circuit "t";\noutput S;\nS = (A AND B;', 3, 13, "expected ')', found ';'"),
+    ('circuit "t";\noutput S;\nS = A AND B @delay 3;', 3, 20, "expected real number, found '3'"),
+    ('circuit "t";\noutput S;\nS = A AND B @ 3.0;', 3, 15, "expected 'delay', found '3.0'"),
+    ('circuit "t";\noutput S;\nS A;', 3, 3, "expected '=', found 'A'"),
+    ('circuit "t";\noutput S;\nS = A OR B C;', 3, 12, "expected '@' or ';', found 'C'"),
+    ('circuit "t";\noutput S;\nS = A;\n)', 4, 1, "expected a statement or end of file, found ')'"),
+    ('circuit "t";\ncircuit "u";', 2, 1, "expected a statement or end of file, found 'circuit'"),
 ])
-def test_syntax_errors_have_position_and_message(source, line, column, fragment):
+def test_syntax_errors_say_where_what_was_expected_and_what_was_found(source, line, column, message):
     result = parse(source)
     assert result.lexical_errors == []
-    assert result.syntax_errors, "expected at least one syntax error"
-    first = result.syntax_errors[0]
-    assert first.startswith(f"Syntax error at line {line}, column {column}: ")
-    assert fragment in first
+    assert result.syntax_errors[0] == f"Syntax error at line {line}, column {column}: {message}"
 
 
 def test_end_of_file_is_required_after_the_last_statement():
@@ -178,18 +179,42 @@ def test_lexical_errors_stop_the_syntactic_analysis():
     assert not result.ok
 
 
-# ---------- error message translation ----------
+# ---------- how the expected set and the found token are described ----------
 
-@pytest.mark.parametrize("raw, expected", [
-    ("mismatched input ';' expecting ')'", "found ';', expected ')'"),
-    ("mismatched input '<EOF>' expecting {'@', ';'}", "found end of file, expected {'@', ';'}"),
-    ("extraneous input ')' expecting {<EOF>, 'input'}", "unexpected symbol ')', expected {end of file, 'input'}"),
-    ("missing ')' at ';'", "missing ')' before ';'"),
-    ("no viable alternative at input 'A B'", "invalid construct near 'A B'"),
-    ("something else entirely", "something else entirely"),
+@pytest.mark.parametrize("names, expected", [
+    (["SEMI"], "';'"),
+    (["IDENT"], "identifier"),
+    (["INT"], "integer"),
+    (["REAL"], "real number"),
+    (["STRING"], "string"),
+    (["SEMI", "AT"], "'@' or ';'"),
+    (["COMMA", "SEMI", "LBRACKET"], "'[', ',' or ';'"),
+    (["NOT", "INT", "IDENT", "LPAREN"], "an expression"),
+    (["INPUT", "OUTPUT", "WIRE", "IDENT", "EOF"], "a statement or end of file"),
+    (["AND", "NAND", "OR", "NOR", "XOR", "XNOR", "SEMI"], "an operator or ';'"),
+    (["NOT", "INT", "IDENT", "LPAREN", "SEMI"], "an expression or ';'"),
+    (["EOF"], "end of file"),
+    ([], ""),
 ])
-def test_translate(raw, expected):
-    assert translate(raw) == expected
+def test_describe_expected(names, expected):
+    assert describe_expected({getattr(CircuitParser, n) if n != "EOF" else -1 for n in names}) == expected
+
+
+def test_describe_expected_caps_long_lists():
+    many = {CircuitParser.INPUT, CircuitParser.OUTPUT, CircuitParser.WIRE, CircuitParser.CIRCUIT,
+            CircuitParser.DELAY, CircuitParser.ASSIGN, CircuitParser.AT, CircuitParser.COMMA}
+    assert describe_expected(many).count(",") <= 6
+    assert "..." in describe_expected(many)
+
+
+def test_describe_found_token():
+    tokens, _ = tokenize("A")
+    assert describe_found(tokens[0]) == "'A'"
+
+
+def test_syntax_message_without_an_expected_set():
+    tokens, _ = tokenize(")")
+    assert syntax_message(set(), tokens[0]) == "unexpected ')'"
 
 
 # ---------- the `expression` start rule (a lone expression) ----------
@@ -206,20 +231,17 @@ def test_expression_rule_accepts_a_lone_expression(text, expected):
     assert sexpr(result.tree.expr()) == expected
 
 
-@pytest.mark.parametrize("text, column, fragment", [
-    ("", 1, "found end of file"),
-    ("A OR", 5, "found end of file"),
-    ("A B", 3, "unexpected symbol 'B', expected end of file"),
-    ("A OR B)", 7, "unexpected symbol ')'"),
-    ("(A OR B", 8, "missing ')' before end of file"),
-    ("A AND ;", 7, "found ';'"),
+@pytest.mark.parametrize("text, column, message", [
+    ("", 1, "expected an expression, found end of file"),
+    ("A OR", 5, "expected an expression, found end of file"),
+    ("A B", 3, "expected end of file, found 'B'"),
+    ("A OR B)", 7, "expected end of file, found ')'"),
+    ("(A OR B", 8, "expected ')', found end of file"),
+    ("A AND ;", 7, "expected an expression, found ';'"),
 ])
-def test_expression_rule_rejects_incomplete_or_extra_input(text, column, fragment):
+def test_expression_rule_rejects_incomplete_or_extra_input(text, column, message):
     result = parse(text, rule="expression")
-    assert result.syntax_errors
-    first = result.syntax_errors[0]
-    assert first.startswith(f"Syntax error at line 1, column {column}: ")
-    assert fragment in first
+    assert result.syntax_errors == [f"Syntax error at line 1, column {column}: {message}"]
 
 
 def test_expression_rule_reports_lexical_errors_first():

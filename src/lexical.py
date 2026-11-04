@@ -69,6 +69,11 @@ def format_token(token):
     return f"{token_name(token)} '{token.text}' line {token.line}"
 
 
+def plural(count, noun):
+    """Count with the right singular or plural: '1 error', '2 errors'."""
+    return f"{count} {noun}" if count == 1 else f"{count} {noun}s"
+
+
 def read_source(path):
     """Read a source file as UTF-8 text; return None if it cannot be opened."""
     try:
@@ -94,12 +99,12 @@ def main(argv):
     tokens, errors = tokenize(text)
     for token in tokens:
         print(format_token(token))
-    print(f"{len(tokens)} tokens recognized")
+    print(f"{plural(len(tokens), 'token')} recognized")
 
     for message in errors:
         print(message, file=sys.stderr)
     if errors:
-        print(f"{len(errors)} lexical errors found", file=sys.stderr)
+        print(f"{plural(len(errors), 'lexical error')} found", file=sys.stderr)
         return 1
     return 0
 

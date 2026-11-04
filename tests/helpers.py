@@ -10,6 +10,8 @@ EXAMPLES = ROOT / "examples"
 VALID_EXAMPLES = sorted(EXAMPLES.glob("*.circ"))
 INVALID_LEXICAL_EXAMPLES = sorted((EXAMPLES / "invalid_lexical").glob("*.circ"))
 INVALID_SYNTAX_EXAMPLES = sorted((EXAMPLES / "invalid_syntax").glob("*.circ"))
+INVALID_SEMANTIC_EXAMPLES = sorted((EXAMPLES / "invalid_semantic").glob("*.circ"))
+WARNING_EXAMPLES = sorted((EXAMPLES / "semantic_warnings").glob("*.circ"))
 
 
 def run_cli(script, *args, cwd=None, stdin=None):

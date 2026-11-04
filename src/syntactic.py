@@ -9,12 +9,11 @@ and prints the indented syntax tree, or with --ast the abstract syntax tree.
 
 Exit codes: 0 = no errors, 1 = lexical or syntax errors, 2 = usage error or unreadable file.
 """
-import re
 import sys
 from dataclasses import dataclass, field
 
 # Importing lexical also puts generated/ on sys.path, which the imports below need.
-from lexical import read_source, token_name, tokenize
+from lexical import plural, read_source, token_name, tokenize
 
 from antlr4 import CommonTokenStream, InputStream
 from antlr4.error.ErrorListener import ErrorListener
@@ -22,6 +21,7 @@ from antlr4.tree.Tree import TerminalNode
 
 from ast_builder import build_ast
 from ast_nodes import format_ast
+from error_strategy import CircuitErrorStrategy
 from CircuitLexer import CircuitLexer
 from CircuitParser import CircuitParser
 
@@ -39,32 +39,14 @@ class ParseResult:
 
 
 class SyntaxErrorCollector(ErrorListener):
+    """Collects syntax errors; CircuitErrorStrategy already wrote the message."""
+
     def __init__(self, errors):
         super().__init__()
         self.errors = errors
 
     def syntaxError(self, recognizer, offendingSymbol, line, column, msg, e):
-        self.errors.append(
-            f"Syntax error at line {line}, column {column + 1}: {translate(msg)}"
-        )
-
-
-def translate(msg):
-    """Rephrase an ANTLR error message in the project's wording."""
-    msg = msg.replace("'<EOF>'", "end of file").replace("<EOF>", "end of file")
-    m = re.match(r"mismatched input (.+) expecting (.+)$", msg)
-    if m:
-        return f"found {m.group(1)}, expected {m.group(2)}"
-    m = re.match(r"extraneous input (.+) expecting (.+)$", msg)
-    if m:
-        return f"unexpected symbol {m.group(1)}, expected {m.group(2)}"
-    m = re.match(r"missing (.+) at (.+)$", msg)
-    if m:
-        return f"missing {m.group(1)} before {m.group(2)}"
-    m = re.match(r"no viable alternative at input (.+)$", msg)
-    if m:
-        return f"invalid construct near {m.group(1)}"
-    return msg
+        self.errors.append(f"Syntax error at line {line}, column {column + 1}: {msg}")
 
 
 def parse(text, rule="program"):
@@ -79,6 +61,7 @@ def parse(text, rule="program"):
     syntax_errors = []
     parser.removeErrorListeners()
     parser.addErrorListener(SyntaxErrorCollector(syntax_errors))
+    parser._errHandler = CircuitErrorStrategy()
     tree = getattr(parser, rule)()
     return ParseResult(tree=tree, parser=parser, syntax_errors=syntax_errors)
 
@@ -119,7 +102,7 @@ def main(argv):
         for message in result.lexical_errors:
             print(message, file=sys.stderr)
         print(
-            f"{len(result.lexical_errors)} lexical errors found (syntactic analysis not run)",
+            f"{plural(len(result.lexical_errors), 'lexical error')} found (syntactic analysis not run)",
             file=sys.stderr,
         )
         return 1
@@ -127,7 +110,7 @@ def main(argv):
     if result.syntax_errors:
         for message in result.syntax_errors:
             print(message, file=sys.stderr)
-        print(f"{len(result.syntax_errors)} syntax errors found", file=sys.stderr)
+        print(f"{plural(len(result.syntax_errors), 'syntax error')} found", file=sys.stderr)
         return 1
 
     if show_ast:

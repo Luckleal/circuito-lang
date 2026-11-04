@@ -1,0 +1,4 @@
+circuit "test";
+output S;
+S = A OR 1;
+input A;

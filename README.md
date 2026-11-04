@@ -115,8 +115,10 @@ python src/syntactic.py examples/half_adder.circ
 | `src/lexical.py` | Lists the recognized tokens and reports lexical errors with line and column |
 | `src/syntactic.py` | Parses from the `program` rule, prints the syntax tree (or the AST with `--ast`) and reports syntax errors with line and column. If there are lexical errors it reports them and does not parse |
 | `src/interactive.py` | Analyzes a boolean expression typed at a prompt ([details](#interactive-mode)) |
+| `src/error_strategy.py` | Syntax error messages (`expected X, found Y`) and panic-mode recovery ([details](#error-reporting)) |
 | `src/ast_builder.py` | Visitor that turns the parse tree into the AST ([details](#abstract-syntax-tree-ast)) |
 | `src/ast_nodes.py` | The AST node classes, each with line and column |
+| `src/semantic.py` | Semantic analysis over the AST: symbol table, type and driver checks, combinational loops ([details](#semantic-analysis)) |
 
 Exit codes of both analyzers: `0` no errors, `1` errors found, `2` usage error or unreadable file.
 
@@ -131,15 +133,17 @@ flowchart LR
     B -- "tokens" --> C["Parser<br/>src/syntactic.py"]
     B -. "lexical error<br/>line + column" .-> E1(["stop, exit 1"])
     C -- "parse tree" --> V["AST builder (visitor)<br/>src/ast_builder.py"]
-    V -- "AST" --> D["Semantic analysis<br/>and simulation"]
+    V -- "AST" --> D["Semantic analysis<br/>src/semantic.py"]
     C -. "syntax error<br/>line + column" .-> E2(["exit 1"])
+    D -. "semantic error<br/>line + column" .-> E3(["exit 1"])
+    D -- "checked AST" --> F["Simulation"]
     G[("grammar/Circuit.g4")] -. "generate.sh" .-> B
     G -. "generate.sh" .-> C
     classDef todo stroke-dasharray: 5 5
-    class D todo
+    class F todo
 ```
 
-Both stages come from a single grammar file. Lexer rules start with an uppercase letter and parser rules with a lowercase one. The dashed box is the next stage and does not exist yet.
+The lexer and the parser come from a single grammar file. Lexer rules start with an uppercase letter and parser rules with a lowercase one. The dashed box is a future stage and does not exist yet.
 
 ## Abstract syntax tree (AST)
 
@@ -173,7 +177,86 @@ The AST is built by a **visitor**: `src/ast_builder.py` extends the `CircuitVisi
 | `Constant` | `0` or `1` |
 | `Not`, `BinaryOp` | A gate with its operand or operands. Parentheses disappear: the tree shape already says the grouping |
 
-The AST is much smaller than the parse tree: `A OR B AND C` has 5 AST nodes against 15 in the parse tree. The semantic analysis (E4) will walk this tree.
+The AST is much smaller than the parse tree: `A OR B AND C` has 5 AST nodes against 15 in the parse tree. The semantic analysis walks this tree.
+
+## Semantic analysis
+
+The grammar only checks that a program has the right shape. `src/semantic.py` checks that it makes sense, walking the AST once and reporting **every** problem it finds (not just the first) with line and column.
+
+```bash
+python src/semantic.py examples/full_adder.circ
+```
+
+On a valid program it prints the symbol table and every equation fully parenthesized, which makes the precedence explicit:
+
+```
+Symbol table:
+  A      input   bit
+  ...
+Equations:
+  p = (A XOR B)
+  sum = (p XOR Cin)
+Semantic analysis completed with no errors
+```
+
+**Errors** (the program is rejected, exit code 1):
+
+| Rule | Example |
+|---|---|
+| Signal not declared | `S = A AND Z;` |
+| Signal used before its declaration | `S = A;` above `input A;` |
+| Signal declared twice | `input A; wire A;` |
+| Bus width below 1 | `input data[0];` |
+| Assignment to an input | `A = B;` |
+| Signal assigned more than once | `S = A; S = B;` |
+| Bus index out of range | `data[4]` in `data[4]` |
+| Index on something that is not a bus | `A[0]` with `input A;` |
+| Whole bus used where one bit is expected | `S = data AND 1;` |
+| Constant other than 0 and 1 | `S = A AND 5;` |
+| Output never assigned | `output S, T;` with no `T = ...` |
+| Wire read but never assigned | `wire t;` used in `S = A AND t;` |
+| Combinational loop | `x = y AND A; y = x OR A;` |
+
+**Warnings** (reported, but the program is accepted, exit code 0): an input that is never used, and a wire that is declared or assigned but never used.
+
+How it works: every gate produces a bit, so the only type rule is that each operand must be a bit; a whole bus or a bad index is rejected where it appears. Each bit of a bus is tracked on its own, so `y[0] = y[1]` is fine but `y[0] = y[1]; y[1] = y[0]` is a loop. Loops are found with a depth-first search over "which signals does this one read". If the lexer or the parser reports an error, the semantic stage does not run. `examples/invalid_semantic/` has one file for each error.
+
+## Operators and precedence
+
+From the tightest binding to the loosest:
+
+| Level | Operators | Kind |
+|---|---|---|
+| 1 | `NOT` | unary |
+| 2 | `AND`, `NAND` | binary, left-associative |
+| 3 | `OR`, `NOR`, `XOR`, `XNOR` | binary, left-associative |
+
+Parentheses change the order. The precedence lives in the order of the alternatives of the `expr` rule in the grammar, so for example `NOT A OR B AND C` is read as `(NOT A) OR (B AND C)`. `examples/precedence.circ` shows it.
+
+## Error reporting
+
+Positions are 1-based and messages go to the standard error stream.
+
+| Stage | Problem | Message |
+|---|---|---|
+| Lexical | Character outside the language | `Lexical error at line 4, column 7: invalid character '&'` |
+| Lexical | Real number without digits after the point | `Lexical error at line 4, column 20: malformed real number '2.' (missing digit after the decimal point)` |
+| Lexical | String without the closing quote | `Lexical error at line 1, column 9: unclosed string (missing closing quote)` |
+| Syntactic | Tokens in the wrong order | `Syntax error at line 5, column 1: expected '@' or ';', found end of file` |
+
+**Syntax error messages** always carry the three things that make a message useful: where (line and column), what the parser expected and what it found, as `expected X, found Y`. The message is built from the offending token and the set of tokens that would have been accepted there, with readable names (`an expression`, `identifier`, `';'`), not from ANTLR's own text.
+
+**Recovery (panic mode).** After a syntax error the parser throws tokens away until a safe point and restarts from there, so one mistake gives **one** message and every real mistake in the file is still reported. Without this, one error leaves the parser in the middle of a half-read statement and everything after it looks wrong: in our tests, 3 broken statements gave 5 messages (2 of them ghosts) before, and give exactly 3 now. The safe points are the tokens that only appear at the end or at the start of a statement: `;`, and `input`, `output` or `wire` when an identifier follows. Never `AND`, `OR` or `,`, which appear in the middle of statements. A `;` is also never discarded as a "stray" token, because that would glue the next statement onto the broken one and hide its own errors. The logic lives in `src/error_strategy.py`.
+
+The `examples/` folder holds the programs the tests run on:
+
+```
+examples/
+├── half_adder.circ   bus.circ   detector.circ   precedence.circ     valid programs
+├── invalid_lexical/   invalid_character · malformed_number · unclosed_string
+└── invalid_syntax/    extra_symbol · missing_header · missing_operand
+                       missing_semicolon · unclosed_paren
+```
 
 ## Interactive mode
 
@@ -191,7 +274,7 @@ Tokens:
 Grouped: ((NOT A) OR (B AND C))
 
 circuit> A OR
-Syntax error at line 1, column 5: found end of file, expected {'NOT', INT, IDENT, '('}
+Syntax error at line 1, column 5: expected an expression, found end of file
 ```
 
 Commands: `:help` and `:quit` (also `:q`, Ctrl+D or Ctrl+C). To analyze one expression and exit (exit code 0 if valid, 1 if not):
@@ -216,6 +299,8 @@ python -m pytest
 | `tests/test_examples.py` | Every file in `examples/`, with the expected result and error position |
 | `tests/test_interactive.py` | The interactive analyzer: output, errors, one-shot mode and piped sessions |
 | `tests/test_ast.py` | The AST and its visitor: node types, precedence shape, positions, printing, `--ast` option |
+| `tests/test_recovery.py` | Panic-mode recovery: one message per mistake in 20 scenarios, no ghost errors, one damaged token never gives more than one message, random input always terminates |
+| `tests/test_semantic.py` | Every semantic rule with its line and column, warnings, loops, the symbol table, equations and the command line |
 
 Useful options: `python -m pytest -v` (one line per test) and `python -m pytest tests/test_parser.py -k precedence` (a subset).
 
@@ -239,9 +324,9 @@ echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
 |---|---|---|
 | E2 | Specification and lexical analyzer | Done |
 | E3 | Syntactic analyzer, syntax tree and AST (built with the visitor) | Done |
-| E4 | Semantic analysis and execution | Not started |
+| E4 | Semantic analysis and execution | Semantic analysis done; simulation not started |
 
-There is no semantic analysis or simulation yet. Checks such as declare-before-use and restricting constants to `0` and `1` are left to E4 on purpose.
+The semantic analysis is complete. Simulating the circuit (computing its outputs, a truth table) and drawing it with gate symbols are not implemented yet.
 
 ## Repository layout
 
@@ -251,7 +336,7 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      lexer and parser rules
 ├── generate.sh             regenerates the ANTLR code into generated/
-├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py
+├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py
 ├── examples/               valid and invalid programs
 ├── tests/                  pytest suite
 └── docs/

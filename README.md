@@ -113,8 +113,10 @@ python src/syntactic.py examples/half_adder.circ
 | Program | What it does |
 |---|---|
 | `src/lexical.py` | Lists the recognized tokens and reports lexical errors with line and column |
-| `src/syntactic.py` | Parses from the `program` rule, prints the syntax tree and reports syntax errors with line and column. If there are lexical errors it reports them and does not parse |
+| `src/syntactic.py` | Parses from the `program` rule, prints the syntax tree (or the AST with `--ast`) and reports syntax errors with line and column. If there are lexical errors it reports them and does not parse |
 | `src/interactive.py` | Analyzes a boolean expression typed at a prompt ([details](#interactive-mode)) |
+| `src/ast_builder.py` | Visitor that turns the parse tree into the AST ([details](#abstract-syntax-tree-ast)) |
+| `src/ast_nodes.py` | The AST node classes, each with line and column |
 
 Exit codes of both analyzers: `0` no errors, `1` errors found, `2` usage error or unreadable file.
 
@@ -128,7 +130,8 @@ flowchart LR
     A[".circ file"] --> B["Lexer<br/>src/lexical.py"]
     B -- "tokens" --> C["Parser<br/>src/syntactic.py"]
     B -. "lexical error<br/>line + column" .-> E1(["stop, exit 1"])
-    C -- "syntax tree" --> D["Semantic analysis<br/>and simulation"]
+    C -- "parse tree" --> V["AST builder (visitor)<br/>src/ast_builder.py"]
+    V -- "AST" --> D["Semantic analysis<br/>and simulation"]
     C -. "syntax error<br/>line + column" .-> E2(["exit 1"])
     G[("grammar/Circuit.g4")] -. "generate.sh" .-> B
     G -. "generate.sh" .-> C
@@ -138,38 +141,39 @@ flowchart LR
 
 Both stages come from a single grammar file. Lexer rules start with an uppercase letter and parser rules with a lowercase one. The dashed box is the next stage and does not exist yet.
 
-## Operators and precedence
+## Abstract syntax tree (AST)
 
-From the tightest binding to the loosest:
+The parse tree that ANTLR returns records how the parser derived the program, so it is full of grammar scaffolding (`statement`, `expr`, `signal`, parentheses, commas). The AST keeps only what the program means, and every node carries its line and column for later error messages.
 
-| Level | Operators | Kind |
-|---|---|---|
-| 1 | `NOT` | unary |
-| 2 | `AND`, `NAND` | binary, left-associative |
-| 3 | `OR`, `NOR`, `XOR`, `XNOR` | binary, left-associative |
-
-Parentheses change the order. The precedence lives in the order of the alternatives of the `expr` rule in the grammar, so for example `NOT A OR B AND C` is read as `(NOT A) OR (B AND C)`. `examples/precedence.circ` shows it.
-
-## Error reporting
-
-Positions are 1-based and messages go to the standard error stream.
-
-| Stage | Problem | Message |
-|---|---|---|
-| Lexical | Character outside the language | `Lexical error at line 4, column 7: invalid character '&'` |
-| Lexical | Real number without digits after the point | `Lexical error at line 4, column 20: malformed real number '2.' (missing digit after the decimal point)` |
-| Lexical | String without the closing quote | `Lexical error at line 1, column 9: unclosed string (missing closing quote)` |
-| Syntactic | Tokens in the wrong order | `Syntax error at line 5, column 1: found end of file, expected {'@', ';'}` |
-
-The `examples/` folder holds the programs the tests run on:
+```bash
+python src/syntactic.py --ast examples/detector.circ
+```
 
 ```
-examples/
-├── half_adder.circ   bus.circ   detector.circ   precedence.circ     valid programs
-├── invalid_lexical/   invalid_character · malformed_number · unclosed_string
-└── invalid_syntax/    extra_symbol · missing_header · missing_operand
-                       missing_semicolon · unclosed_paren
+Program "detector"
+  Declaration input
+    Signal A
+    ...
+  Assignment @delay 3.0
+    Signal S
+    BinaryOp OR
+      Signal t1
+      Not
+        Signal C
 ```
+
+The AST is built by a **visitor**: `src/ast_builder.py` extends the `CircuitVisitor` class that ANTLR generates (`-visitor` in `generate.sh`). A visitor is the right pattern because each method returns the node it built, and a parent node is made of its children's results. For this, every alternative of the `expr` rule in the grammar has a label (`# NotExpr`, `# AndExpr`, ...), and ANTLR generates one `visit...` method per label.
+
+| Node (`src/ast_nodes.py`) | Meaning |
+|---|---|
+| `Program` | The circuit name and its statements |
+| `Declaration` | `input`, `output` or `wire`, with its signals |
+| `Assignment` | A target signal, an expression and an optional delay |
+| `Signal` | A name, with a bus width (in a declaration) or an index (in a use) |
+| `Constant` | `0` or `1` |
+| `Not`, `BinaryOp` | A gate with its operand or operands. Parentheses disappear: the tree shape already says the grouping |
+
+The AST is much smaller than the parse tree: `A OR B AND C` has 5 AST nodes against 15 in the parse tree. The semantic analysis (E4) will walk this tree.
 
 ## Interactive mode
 
@@ -177,7 +181,7 @@ examples/
 python src/interactive.py
 ```
 
-It prompts with `circuit>`. Type a boolean expression and it shows the tokens, the syntax tree and the fully parenthesized grouping, which makes the precedence visible. Errors come with line and column.
+It prompts with `circuit>`. Type a boolean expression and it shows the tokens, the syntax tree, the AST and the fully parenthesized grouping, which makes the precedence visible. Errors come with line and column.
 
 ```
 circuit> NOT A OR B AND C
@@ -211,6 +215,7 @@ python -m pytest
 | `tests/test_cli.py` | Both programs as real commands: output format, exit codes, stdout vs stderr, missing file, any working directory, CRLF and non-ASCII input |
 | `tests/test_examples.py` | Every file in `examples/`, with the expected result and error position |
 | `tests/test_interactive.py` | The interactive analyzer: output, errors, one-shot mode and piped sessions |
+| `tests/test_ast.py` | The AST and its visitor: node types, precedence shape, positions, printing, `--ast` option |
 
 Useful options: `python -m pytest -v` (one line per test) and `python -m pytest tests/test_parser.py -k precedence` (a subset).
 
@@ -233,7 +238,7 @@ echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
 | Stage | Delivers | State |
 |---|---|---|
 | E2 | Specification and lexical analyzer | Done |
-| E3 | Syntactic analyzer and syntax tree | Done |
+| E3 | Syntactic analyzer, syntax tree and AST (built with the visitor) | Done |
 | E4 | Semantic analysis and execution | Not started |
 
 There is no semantic analysis or simulation yet. Checks such as declare-before-use and restricting constants to `0` and `1` are left to E4 on purpose.
@@ -246,7 +251,7 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      lexer and parser rules
 ├── generate.sh             regenerates the ANTLR code into generated/
-├── src/                    lexical.py · syntactic.py · interactive.py
+├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py
 ├── examples/               valid and invalid programs
 ├── tests/                  pytest suite
 └── docs/

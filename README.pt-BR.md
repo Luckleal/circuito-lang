@@ -116,8 +116,10 @@ O `generate.sh` gera o lexer e o parser em `generated/` a partir de `grammar/Cir
 | Programa | O que faz |
 |---|---|
 | `src/lexical.py` | Lista os tokens reconhecidos e aponta erros léxicos com linha e coluna |
-| `src/syntactic.py` | Faz o parsing a partir da regra `program`, imprime a árvore sintática e aponta erros sintáticos com linha e coluna. Se houver erros léxicos, reporta e não faz o parsing |
+| `src/syntactic.py` | Faz o parsing a partir da regra `program`, imprime a árvore sintática (ou a AST com `--ast`) e aponta erros sintáticos com linha e coluna. Se houver erros léxicos, reporta e não faz o parsing |
 | `src/interactive.py` | Analisa uma expressão booleana digitada num prompt ([detalhes](#modo-interativo)) |
+| `src/ast_builder.py` | Visitor que transforma a árvore de parse na AST ([detalhes](#árvore-sintática-abstrata-ast)) |
+| `src/ast_nodes.py` | As classes dos nós da AST, cada uma com linha e coluna |
 
 Códigos de saída dos dois analisadores: `0` sem erros, `1` erros encontrados, `2` erro de uso ou arquivo ilegível.
 
@@ -131,7 +133,8 @@ flowchart LR
     A["arquivo .circ"] --> B["Lexer<br/>src/lexical.py"]
     B -- "tokens" --> C["Parser<br/>src/syntactic.py"]
     B -. "erro léxico<br/>linha + coluna" .-> E1(["para, saída 1"])
-    C -- "árvore sintática" --> D["Análise semântica<br/>e simulação"]
+    C -- "árvore de parse" --> V["Construtor da AST (visitor)<br/>src/ast_builder.py"]
+    V -- "AST" --> D["Análise semântica<br/>e simulação"]
     C -. "erro sintático<br/>linha + coluna" .-> E2(["saída 1"])
     G[("grammar/Circuit.g4")] -. "generate.sh" .-> B
     G -. "generate.sh" .-> C
@@ -141,38 +144,39 @@ flowchart LR
 
 As duas etapas saem de um único arquivo de gramática. Regras de lexer começam com letra maiúscula e regras de parser com minúscula. A caixa tracejada é a próxima etapa e ainda não existe.
 
-## Operadores e precedência
+## Árvore sintática abstrata (AST)
 
-Do que liga mais forte ao que liga mais fraco:
+A árvore de parse que o ANTLR devolve registra como o parser derivou o programa, então está cheia de andaime da gramática (`statement`, `expr`, `signal`, parênteses, vírgulas). A AST guarda só o que o programa significa, e cada nó carrega sua linha e coluna para as mensagens de erro futuras.
 
-| Nível | Operadores | Tipo |
-|---|---|---|
-| 1 | `NOT` | unário |
-| 2 | `AND`, `NAND` | binário, associa à esquerda |
-| 3 | `OR`, `NOR`, `XOR`, `XNOR` | binário, associa à esquerda |
-
-Parênteses mudam a ordem. A precedência está na ordem das alternativas da regra `expr` na gramática, então `NOT A OR B AND C` é lido como `(NOT A) OR (B AND C)`. O `examples/precedence.circ` mostra isso.
-
-## Relatório de erros
-
-As posições começam em 1 e as mensagens vão para a saída de erro padrão. As mensagens do programa são em inglês.
-
-| Etapa | Problema | Mensagem |
-|---|---|---|
-| Léxica | Caractere fora da linguagem | `Lexical error at line 4, column 7: invalid character '&'` |
-| Léxica | Real sem dígitos depois do ponto | `Lexical error at line 4, column 20: malformed real number '2.' (missing digit after the decimal point)` |
-| Léxica | Texto sem aspas de fechamento | `Lexical error at line 1, column 9: unclosed string (missing closing quote)` |
-| Sintática | Tokens fora de ordem | `Syntax error at line 5, column 1: found end of file, expected {'@', ';'}` |
-
-A pasta `examples/` guarda os programas usados pelos testes:
+```bash
+python src/syntactic.py --ast examples/detector.circ
+```
 
 ```
-examples/
-├── half_adder.circ   bus.circ   detector.circ   precedence.circ     programas válidos
-├── invalid_lexical/   invalid_character · malformed_number · unclosed_string
-└── invalid_syntax/    extra_symbol · missing_header · missing_operand
-                       missing_semicolon · unclosed_paren
+Program "detector"
+  Declaration input
+    Signal A
+    ...
+  Assignment @delay 3.0
+    Signal S
+    BinaryOp OR
+      Signal t1
+      Not
+        Signal C
 ```
+
+A AST é montada por um **visitor**: `src/ast_builder.py` estende a classe `CircuitVisitor` que o ANTLR gera (`-visitor` no `generate.sh`). O visitor é o padrão certo porque cada método devolve o nó que construiu, e um nó pai é feito dos resultados dos filhos. Para isso, cada alternativa da regra `expr` na gramática tem um rótulo (`# NotExpr`, `# AndExpr`, ...), e o ANTLR gera um método `visit...` por rótulo.
+
+| Nó (`src/ast_nodes.py`) | Significado |
+|---|---|
+| `Program` | O nome do circuito e seus comandos |
+| `Declaration` | `input`, `output` ou `wire`, com seus sinais |
+| `Assignment` | Um sinal alvo, uma expressão e um atraso opcional |
+| `Signal` | Um nome, com largura de barramento (na declaração) ou índice (no uso) |
+| `Constant` | `0` ou `1` |
+| `Not`, `BinaryOp` | Uma porta com seu operando ou operandos. Os parênteses somem: o formato da árvore já diz o agrupamento |
+
+A AST é bem menor que a árvore de parse: `A OR B AND C` tem 5 nós na AST contra 15 na árvore de parse. A análise semântica (E4) vai percorrer essa árvore.
 
 ## Modo interativo
 
@@ -180,7 +184,7 @@ examples/
 python src/interactive.py
 ```
 
-Ele mostra o prompt `circuit>`. Digite uma expressão booleana e ele exibe os tokens, a árvore sintática e o agrupamento totalmente parentesado, o que deixa a precedência visível. Erros vêm com linha e coluna.
+Ele mostra o prompt `circuit>`. Digite uma expressão booleana e ele exibe os tokens, a árvore sintática, a AST e o agrupamento totalmente parentesado, o que deixa a precedência visível. Erros vêm com linha e coluna.
 
 ```
 circuit> NOT A OR B AND C
@@ -214,6 +218,7 @@ python -m pytest
 | `tests/test_cli.py` | Os dois programas como comandos reais: formato da saída, códigos de saída, stdout vs stderr, arquivo inexistente, qualquer diretório de trabalho, entrada CRLF e não ASCII |
 | `tests/test_examples.py` | Cada arquivo de `examples/`, com o resultado esperado e a posição do erro |
 | `tests/test_interactive.py` | O analisador interativo: saída, erros, modo de uma expressão e sessões por pipe |
+| `tests/test_ast.py` | A AST e seu visitor: tipos de nó, formato da precedência, posições, impressão, opção `--ast` |
 
 Opções úteis: `python -m pytest -v` (uma linha por teste) e `python -m pytest tests/test_parser.py -k precedence` (um subconjunto).
 
@@ -236,7 +241,7 @@ echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
 | Etapa | Entrega | Estado |
 |---|---|---|
 | E2 | Especificação e analisador léxico | Pronta |
-| E3 | Analisador sintático e árvore sintática | Pronta |
+| E3 | Analisador sintático, árvore sintática e AST (montada com o visitor) | Pronta |
 | E4 | Análise semântica e execução | Não iniciada |
 
 Ainda não há análise semântica nem simulação. Verificações como declarar antes de usar e restringir constantes a `0` e `1` ficam para a E4 de propósito.
@@ -249,7 +254,7 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      regras de lexer e de parser
 ├── generate.sh             regenera o código do ANTLR em generated/
-├── src/                    lexical.py · syntactic.py · interactive.py
+├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py
 ├── examples/               programas válidos e inválidos
 ├── tests/                  suíte do pytest
 └── docs/

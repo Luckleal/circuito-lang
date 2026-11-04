@@ -104,3 +104,30 @@ All positions are 1-based (line and column). Messages go to the standard error s
 | Syntactic | tokens in the wrong order | `Syntax error at line 5, column 1: found end of file, expected {'@', ';'}` |
 
 Exit codes of both analyzers: `0` no errors, `1` errors found, `2` usage error or unreadable file. If there are lexical errors, the syntactic analyzer reports them and does not parse.
+
+## 10. Abstract syntax tree
+
+The parser's result is turned into an abstract syntax tree (AST) by a visitor (`src/ast_builder.py`). The AST drops the grammar scaffolding (rule names such as `statement` and `expr`, parentheses, commas, semicolons) and keeps only what the program means. Every node records the line and column (1-based) where it starts.
+
+| Node | Fields |
+|---|---|
+| `Program` | `name`, `statements` |
+| `Declaration` | `kind` (`input`, `output` or `wire`), `signals` |
+| `Assignment` | `target` (a `Signal`), `expr`, `delay` (a number or none) |
+| `Signal` | `name`, `index` (the bus width in a declaration, the position in a use, or none) |
+| `Constant` | `value` |
+| `Not` | `operand` |
+| `BinaryOp` | `op` (`AND`, `NAND`, `OR`, `NOR`, `XOR` or `XNOR`), `left`, `right` |
+
+Each alternative of the `expr` rule has a label in the grammar (`NotExpr`, `AndExpr`, `OrExpr`, `ParenExpr`, `SignalExpr`, `ConstExpr`), so the generated visitor has one method per kind of expression. For example, `NOT A OR B AND C` becomes:
+
+```
+BinaryOp OR
+  Not
+    Signal A
+  BinaryOp AND
+    Signal B
+    Signal C
+```
+
+`python src/syntactic.py --ast file.circ` prints the AST of a program. The semantic analysis stage walks this tree.

@@ -119,6 +119,7 @@ python src/syntactic.py examples/half_adder.circ
 | `src/ast_builder.py` | Visitor that turns the parse tree into the AST ([details](#abstract-syntax-tree-ast)) |
 | `src/ast_nodes.py` | The AST node classes, each with line and column |
 | `src/semantic.py` | Semantic analysis over the AST: symbol table, type and driver checks, combinational loops ([details](#semantic-analysis)) |
+| `src/simulator.py` | Simulates a checked program: truth table, one combination, and timing from the `@delay` annotations ([details](#simulation)) |
 
 Exit codes of both analyzers: `0` no errors, `1` errors found, `2` usage error or unreadable file.
 
@@ -136,14 +137,12 @@ flowchart LR
     V -- "AST" --> D["Semantic analysis<br/>src/semantic.py"]
     C -. "syntax error<br/>line + column" .-> E2(["exit 1"])
     D -. "semantic error<br/>line + column" .-> E3(["exit 1"])
-    D -- "checked AST" --> F["Simulation"]
+    D -- "checked AST" --> F["Simulation<br/>src/simulator.py"]
     G[("grammar/Circuit.g4")] -. "generate.sh" .-> B
     G -. "generate.sh" .-> C
-    classDef todo stroke-dasharray: 5 5
-    class F todo
 ```
 
-The lexer and the parser come from a single grammar file. Lexer rules start with an uppercase letter and parser rules with a lowercase one. The dashed box is a future stage and does not exist yet.
+The lexer and the parser come from a single grammar file. Lexer rules start with an uppercase letter and parser rules with a lowercase one.
 
 ## Abstract syntax tree (AST)
 
@@ -252,11 +251,67 @@ The `examples/` folder holds the programs the tests run on:
 
 ```
 examples/
-├── half_adder.circ   bus.circ   detector.circ   precedence.circ     valid programs
+├── half_adder.circ   full_adder.circ   bus.circ   detector.circ   precedence.circ   delays.circ     valid programs
 ├── invalid_lexical/   invalid_character · malformed_number · unclosed_string
 └── invalid_syntax/    extra_symbol · missing_header · missing_operand
                        missing_semicolon · unclosed_paren
 ```
+
+## Simulation
+
+`src/simulator.py` runs a checked program. A valid program is a static combinational circuit, so it can be evaluated gate by gate, in dependency order.
+
+```bash
+python src/simulator.py examples/half_adder.circ
+```
+
+```
+Truth table of "half adder": 2 input bits, 4 rows
+A B | sum carry
+0 0 |  0    0
+0 1 |  1    0
+1 0 |  1    0
+1 1 |  0    1
+```
+
+To evaluate **one** combination instead, give a value for every input bit (a bus bit is written `data[2]=1`):
+
+```bash
+python src/simulator.py examples/full_adder.circ A=1 B=1 Cin=0
+```
+
+```
+Inputs:
+  A = 1
+  B = 1
+  Cin = 0
+Wires:
+  p = 0
+  g1 = 1
+  g2 = 0
+Outputs:
+  sum = 0
+  carry = 1
+```
+
+How it works:
+
+- The lexer, the parser and the semantic analysis run first, and the simulation stops on any error (exit code 1, `simulation not run`). That is what makes the evaluation safe: every output is driven, no signal depends on itself, and every bit has a defined value.
+- Each driven bit is evaluated once, after the bits it reads. `NAND`, `NOR` and `XNOR` are the negations of `AND`, `OR` and `XOR`.
+- In the truth table the first input is the most significant bit, so the rows count in binary. Columns are the inputs, then the outputs, in declaration order, with a bus shown bit by bit (`data[0]`, `data[1]`, ...).
+- A table has 2^n rows, so it is limited to 16 input bits (65,536 rows). Above that, give a value for each input to evaluate one combination.
+- If a value is missing, is not 0 or 1, or names something that is not an input bit, the simulator says so and exits with code 2.
+
+**Timing.** When the program has `@delay` annotations, the simulator also reports when each output settles. The arrival time of a signal is the latest arrival among the signals it reads, plus its own delay, and inputs arrive at 0. The critical path is the route from an input to the slowest output. On a tie, the route through more gates is shown. `examples/delays.circ` shows it:
+
+```
+Timing (ns):
+  S  4.0
+  T  1.0
+Critical path: A -> x -> y -> S (4.0 ns)
+```
+
+Exit codes: `0` simulated, `1` the program has errors, `2` usage error, unreadable file, bad values or too many inputs for a table.
 
 ## Interactive mode
 
@@ -301,6 +356,7 @@ python -m pytest
 | `tests/test_ast.py` | The AST and its visitor: node types, precedence shape, positions, printing, `--ast` option |
 | `tests/test_recovery.py` | Panic-mode recovery: one message per mistake in 20 scenarios, no ghost errors, one damaged token never gives more than one message, random input always terminates |
 | `tests/test_semantic.py` | Every semantic rule with its line and column, warnings, loops, the symbol table, equations and the command line |
+| `tests/test_simulator.py` | Every gate, the example circuits, an independent evaluator on random expressions (with and without parentheses), timing and critical path, values given on the command line and the size limit |
 
 Useful options: `python -m pytest -v` (one line per test) and `python -m pytest tests/test_parser.py -k precedence` (a subset).
 
@@ -324,9 +380,9 @@ echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
 |---|---|---|
 | E2 | Specification and lexical analyzer | Done |
 | E3 | Syntactic analyzer, syntax tree and AST (built with the visitor) | Done |
-| E4 | Semantic analysis and execution | Semantic analysis done; simulation not started |
+| E4 | Semantic analysis and execution | Done |
 
-The semantic analysis is complete. Simulating the circuit (computing its outputs, a truth table) and drawing it with gate symbols are not implemented yet.
+The semantic analysis and the simulation are complete. Drawing the circuit with gate symbols (SVG) is not implemented yet.
 
 ## Repository layout
 
@@ -336,7 +392,7 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      lexer and parser rules
 ├── generate.sh             regenerates the ANTLR code into generated/
-├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py
+├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py · simulator.py
 ├── examples/               valid and invalid programs
 ├── tests/                  pytest suite
 └── docs/

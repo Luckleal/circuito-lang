@@ -122,6 +122,7 @@ O `generate.sh` gera o lexer e o parser em `generated/` a partir de `grammar/Cir
 | `src/ast_builder.py` | Visitor que transforma a árvore de parse na AST ([detalhes](#árvore-sintática-abstrata-ast)) |
 | `src/ast_nodes.py` | As classes dos nós da AST, cada uma com linha e coluna |
 | `src/semantic.py` | Análise semântica sobre a AST: tabela de símbolos, checagem de tipos e de quem dirige cada sinal, laços combinacionais ([detalhes](#análise-semântica)) |
+| `src/simulator.py` | Simula um programa verificado: tabela-verdade, uma combinação e os tempos a partir das anotações `@delay` ([detalhes](#simulação)) |
 
 Códigos de saída dos dois analisadores: `0` sem erros, `1` erros encontrados, `2` erro de uso ou arquivo ilegível.
 
@@ -139,14 +140,12 @@ flowchart LR
     V -- "AST" --> D["Análise semântica<br/>src/semantic.py"]
     C -. "erro sintático<br/>linha + coluna" .-> E2(["saída 1"])
     D -. "erro semântico<br/>linha + coluna" .-> E3(["saída 1"])
-    D -- "AST verificada" --> F["Simulação"]
+    D -- "AST verificada" --> F["Simulação<br/>src/simulator.py"]
     G[("grammar/Circuit.g4")] -. "generate.sh" .-> B
     G -. "generate.sh" .-> C
-    classDef todo stroke-dasharray: 5 5
-    class F todo
 ```
 
-O lexer e o parser saem de um único arquivo de gramática. Regras de lexer começam com letra maiúscula e regras de parser com minúscula. A caixa tracejada é uma etapa futura e ainda não existe.
+O lexer e o parser saem de um único arquivo de gramática. Regras de lexer começam com letra maiúscula e regras de parser com minúscula.
 
 ## Árvore sintática abstrata (AST)
 
@@ -255,11 +254,67 @@ A pasta `examples/` guarda os programas usados pelos testes:
 
 ```
 examples/
-├── half_adder.circ   bus.circ   detector.circ   precedence.circ     programas válidos
+├── half_adder.circ   full_adder.circ   bus.circ   detector.circ   precedence.circ   delays.circ     programas válidos
 ├── invalid_lexical/   invalid_character · malformed_number · unclosed_string
 └── invalid_syntax/    extra_symbol · missing_header · missing_operand
                        missing_semicolon · unclosed_paren
 ```
+
+## Simulação
+
+O `src/simulator.py` executa um programa já verificado. Um programa válido é um circuito combinacional estático, então pode ser calculado porta por porta, na ordem das dependências.
+
+```bash
+python src/simulator.py examples/half_adder.circ
+```
+
+```
+Truth table of "half adder": 2 input bits, 4 rows
+A B | sum carry
+0 0 |  0    0
+0 1 |  1    0
+1 0 |  1    0
+1 1 |  0    1
+```
+
+Para calcular **uma** combinação, dê um valor para cada bit de entrada (um bit de barramento se escreve `data[2]=1`):
+
+```bash
+python src/simulator.py examples/full_adder.circ A=1 B=1 Cin=0
+```
+
+```
+Inputs:
+  A = 1
+  B = 1
+  Cin = 0
+Wires:
+  p = 0
+  g1 = 1
+  g2 = 0
+Outputs:
+  sum = 0
+  carry = 1
+```
+
+Como funciona:
+
+- O lexer, o parser e a análise semântica rodam antes, e a simulação para em qualquer erro (saída 1, `simulation not run`). É isso que torna o cálculo seguro: toda saída é dirigida, nenhum sinal depende de si mesmo e todo bit tem valor definido.
+- Cada bit dirigido é calculado uma vez, depois dos bits que ele lê. `NAND`, `NOR` e `XNOR` são as negações de `AND`, `OR` e `XOR`.
+- Na tabela-verdade a primeira entrada é o bit mais significativo, então as linhas contam em binário. As colunas são as entradas e depois as saídas, na ordem de declaração, com o barramento mostrado bit a bit (`data[0]`, `data[1]`, ...).
+- Uma tabela tem 2^n linhas, então é limitada a 16 bits de entrada (65.536 linhas). Acima disso, dê um valor para cada entrada para calcular uma combinação.
+- Se falta um valor, se ele não é 0 nem 1, ou se o nome não é um bit de entrada, o simulador avisa e sai com código 2.
+
+**Tempos.** Quando o programa tem anotações `@delay`, o simulador também informa quando cada saída se estabiliza. O tempo de chegada de um sinal é o maior tempo de chegada entre os sinais que ele lê, mais o atraso dele, e as entradas chegam em 0. O caminho crítico é a rota de uma entrada até a saída mais lenta. Num empate, aparece a rota que passa por mais portas. O `examples/delays.circ` mostra isso:
+
+```
+Timing (ns):
+  S  4.0
+  T  1.0
+Critical path: A -> x -> y -> S (4.0 ns)
+```
+
+Códigos de saída: `0` simulado, `1` o programa tem erros, `2` erro de uso, arquivo ilegível, valores inválidos ou entradas demais para uma tabela.
 
 ## Modo interativo
 
@@ -304,6 +359,7 @@ python -m pytest
 | `tests/test_ast.py` | A AST e seu visitor: tipos de nó, formato da precedência, posições, impressão, opção `--ast` |
 | `tests/test_recovery.py` | Recuperação em modo pânico: uma mensagem por erro em 20 cenários, sem erros fantasma, um token danificado nunca dá mais de uma mensagem, entrada aleatória sempre termina |
 | `tests/test_semantic.py` | Cada regra semântica com sua linha e coluna, avisos, laços, tabela de símbolos, equações e a linha de comando |
+| `tests/test_simulator.py` | Cada porta, os circuitos de exemplo, um avaliador independente em expressões aleatórias (com e sem parênteses), tempos e caminho crítico, valores dados na linha de comando e o limite de tamanho |
 
 Opções úteis: `python -m pytest -v` (uma linha por teste) e `python -m pytest tests/test_parser.py -k precedence` (um subconjunto).
 
@@ -327,9 +383,9 @@ echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
 |---|---|---|
 | E2 | Especificação e analisador léxico | Pronta |
 | E3 | Analisador sintático, árvore sintática e AST (montada com o visitor) | Pronta |
-| E4 | Análise semântica e execução | Análise semântica pronta; simulação não iniciada |
+| E4 | Análise semântica e execução | Pronta |
 
-A análise semântica está completa. Simular o circuito (calcular as saídas, uma tabela-verdade) e desenhá-lo com os símbolos das portas ainda não foram implementados.
+A análise semântica e a simulação estão completas. Desenhar o circuito com os símbolos das portas (SVG) ainda não foi implementado.
 
 ## Estrutura do repositório
 
@@ -339,7 +395,7 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      regras de lexer e de parser
 ├── generate.sh             regenera o código do ANTLR em generated/
-├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py
+├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py · simulator.py
 ├── examples/               programas válidos e inválidos
 ├── tests/                  suíte do pytest
 └── docs/

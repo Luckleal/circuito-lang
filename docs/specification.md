@@ -162,3 +162,27 @@ The grammar only checks the shape of a program. The semantic analysis (`src/sema
 **Warnings** do not reject the program: `input 'A' is never used`, `wire 't' is assigned but never used` and `wire 't' is declared but never used`. A bus is reported only if none of its bits is used.
 
 **Report.** When the analysis succeeds it prints the symbol table and every equation fully parenthesized (`S = ((NOT A) OR (B AND C))`), which shows the precedence the parser chose. Exit codes: `0` no errors (warnings allowed), `1` errors found, `2` usage error or unreadable file.
+
+## 12. Simulation
+
+A program that passes the semantic analysis is a static combinational circuit, and `src/simulator.py` evaluates it. The simulation does not run if the lexer, the parser or the semantic analysis reported an error.
+
+**Gates.** Every signal is a bit, 0 or 1.
+
+| Gate | Result |
+|---|---|
+| `NOT a` | 1 if `a` is 0 |
+| `a AND b` | 1 if both are 1 |
+| `a NAND b` | the negation of `a AND b` |
+| `a OR b` | 1 if at least one is 1 |
+| `a NOR b` | the negation of `a OR b` |
+| `a XOR b` | 1 if exactly one is 1 |
+| `a XNOR b` | 1 if both are equal |
+
+**Evaluation.** Each bit that is assigned is evaluated once, after the bits its expression reads, so the order of the statements in the source does not matter. A constant is its own value. The semantic analysis guarantees that this order exists (no loops) and that every output has a value.
+
+**Truth table.** One row for every combination of the input bits. The inputs are the columns on the left and the outputs the columns on the right, in declaration order, with a bus listed bit by bit. The first input is the most significant bit, so the rows count in binary from all zeros. The number of rows is 2 to the power of the number of input bits, which is limited to 16 input bits. For more, a single combination is evaluated by giving a value to every input bit (`A=1`, and `data[2]=0` for a bus bit).
+
+**Timing.** The `@delay` annotation is the propagation delay, in nanoseconds, of the gate in that statement; a statement without it has delay 0. The arrival time of an input is 0. The arrival time of a signal is the largest arrival time among the signals its expression reads, plus its own delay. The critical path is the chain of signals that ends at the output with the largest arrival time. When two chains tie, the one through more gates is reported. The timing is printed only when the program has at least one `@delay`.
+
+Exit codes: `0` simulated, `1` the program has errors, `2` usage error, unreadable file, a value that is missing or is not 0 or 1, or too many inputs for a truth table.

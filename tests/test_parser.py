@@ -2,7 +2,13 @@
 import pytest
 
 from helpers import EXAMPLES
-from syntactic import format_tree, parenthesize as sexpr, parse, translate
+from ast_builder import build_ast
+from syntactic import format_tree, parse, translate
+
+
+def sexpr(expr_ctx):
+    """Fully parenthesized form of an expression (built from its AST), to check precedence."""
+    return build_ast(expr_ctx).parenthesized()
 
 HEADER = 'circuit "t";\n'
 

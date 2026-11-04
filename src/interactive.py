@@ -5,15 +5,18 @@ Usage:
   python src/interactive.py              prompt for expressions until you type :quit
   python src/interactive.py "NOT A OR B" analyze one expression and exit
 
-For each expression it shows the tokens, then either the syntax tree and the fully
-parenthesized grouping, or the lexical/syntax errors with line and column.
+For each expression it shows the tokens, then either the syntax tree, the abstract
+syntax tree (AST) and the fully parenthesized grouping, or the lexical/syntax errors
+with line and column.
 
 One-shot exit codes: 0 = valid expression, 1 = errors found, 2 = usage error.
 """
 import sys
 
+from ast_builder import build_ast
+from ast_nodes import format_ast
 from lexical import token_name, tokenize
-from syntactic import format_tree, parenthesize, parse
+from syntactic import format_tree, parse
 
 PROMPT = "circuit> "
 BANNER = "Circuit expression analyzer. Type an expression (e.g. NOT A OR B AND C), :help for help, :quit to exit."
@@ -46,7 +49,11 @@ def analyze(text):
     print("Syntax tree:")
     for line in format_tree(result.tree, result.parser):
         print(f"  {line}")
-    print(f"Grouped: {parenthesize(result.tree.expr())}")
+    ast = build_ast(result.tree)
+    print("AST:")
+    for line in format_ast(ast):
+        print(f"  {line}")
+    print(f"Grouped: {ast.parenthesized()}")
     return True
 
 

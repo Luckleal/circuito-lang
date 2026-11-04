@@ -32,12 +32,17 @@ signal      : IDENT (LBRACKET INT RBRACKET)? ;
 // Binary operators are left-associative (ANTLR default).
 // A ordem das alternativas define a precedência: a declarada antes liga mais forte.
 // Operadores binários associam à esquerda (padrão do ANTLR).
-expr        : NOT expr                              // strongest / mais forte
-            | expr (AND | NAND) expr
-            | expr (OR | NOR | XOR | XNOR) expr     // weakest / mais fraco
-            | LPAREN expr RPAREN
-            | signal
-            | INT                                   // constants 0 and 1 (checked in semantic analysis) / constantes 0 e 1 (verificadas na análise semântica)
+//
+// Every alternative has a label (# Name): ANTLR generates one visitor method per label
+// (visitNotExpr, visitAndExpr...), which the AST builder (src/ast_builder.py) implements.
+// Cada alternativa tem um rótulo (# Nome): o ANTLR gera um método de visitor por rótulo
+// (visitNotExpr, visitAndExpr...), implementados pelo construtor da AST (src/ast_builder.py).
+expr        : NOT operand=expr                              # NotExpr    // strongest / mais forte
+            | left=expr op=(AND | NAND) right=expr          # AndExpr
+            | left=expr op=(OR | NOR | XOR | XNOR) right=expr   # OrExpr // weakest / mais fraco
+            | LPAREN inner=expr RPAREN                      # ParenExpr
+            | signal                                        # SignalExpr
+            | INT                                           # ConstExpr  // constants 0 and 1 (checked in semantic analysis) / constantes 0 e 1 (verificadas na análise semântica)
             ;
 
 // ##################### LEXER RULES / REGRAS DE LEXER #####################

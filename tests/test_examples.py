@@ -2,6 +2,7 @@
 import lexical
 import pytest
 import syntactic
+from ast_builder import build_ast
 
 from helpers import INVALID_LEXICAL_EXAMPLES, INVALID_SYNTAX_EXAMPLES, VALID_EXAMPLES
 
@@ -70,7 +71,7 @@ def test_syntax_error_example_is_lexically_valid_but_not_syntactically(path, cap
 def test_precedence_example_groups_and_before_or():
     result = syntactic.parse(text_of(next(p for p in VALID_EXAMPLES if p.name == "precedence.circ")))
     assert result.ok
-    expr = result.tree.statement(2).assignment().expr()
-    assert expr.OR() is not None
-    assert expr.expr(0).NOT() is not None
-    assert expr.expr(1).AND() is not None
+    expr = build_ast(result.tree).statements[2].expr
+    assert expr.op == "OR"
+    assert type(expr.left).__name__ == "Not"
+    assert expr.right.op == "AND"

@@ -101,7 +101,11 @@ All positions are 1-based (line and column). Messages go to the standard error s
 | Lexical | character outside the language | `Lexical error at line 4, column 7: invalid character '&'` |
 | Lexical | real number without digits after the point | `Lexical error at line 4, column 20: malformed real number '2.' (missing digit after the decimal point)` |
 | Lexical | string without the closing quote | `Lexical error at line 1, column 9: unclosed string (missing closing quote)` |
-| Syntactic | tokens in the wrong order | `Syntax error at line 5, column 1: found end of file, expected {'@', ';'}` |
+| Syntactic | tokens in the wrong order | `Syntax error at line 5, column 1: expected '@' or ';', found end of file` |
+
+Every syntax error says where (line and column), what was expected and what was found, as `expected X, found Y`, using readable names (`an expression`, `identifier`, `';'`).
+
+**Recovery.** After a syntax error the parser discards tokens up to a safe point and restarts from there, so one mistake gives one message and every real mistake in the file is reported. The safe points are `;`, the end of the file, and `input`, `output` or `wire` when an identifier follows (the start of a declaration). Tokens that appear in the middle of a statement (`AND`, `OR`, `,`, identifiers) are never safe points, and a `;` is never discarded as a stray token.
 
 Exit codes of both analyzers: `0` no errors, `1` errors found, `2` usage error or unreadable file. If there are lexical errors, the syntactic analyzer reports them and does not parse.
 

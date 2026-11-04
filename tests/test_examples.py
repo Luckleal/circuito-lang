@@ -20,11 +20,11 @@ EXPECTED_LEXICAL = {
     "unclosed_string.circ": (1, 9, "unclosed string"),
 }
 EXPECTED_SYNTAX = {
-    "missing_semicolon.circ": (5, 1, "found end of file"),
-    "unclosed_paren.circ": (4, 13, "missing ')' before ';'"),
-    "missing_operand.circ": (4, 11, "found ';'"),
-    "missing_header.circ": (1, 1, "found 'input', expected 'circuit'"),
-    "extra_symbol.circ": (5, 1, "unexpected symbol ')'"),
+    "missing_semicolon.circ": (5, 1, "expected '@' or ';', found end of file"),
+    "unclosed_paren.circ": (4, 13, "expected ')', found ';'"),
+    "missing_operand.circ": (4, 11, "expected an expression, found ';'"),
+    "missing_header.circ": (1, 1, "expected 'circuit', found 'input'"),
+    "extra_symbol.circ": (5, 1, "expected a statement or end of file, found ')'"),
 }
 EXPECTED_SEMANTIC = {
     "assign_to_input.circ": (4, 1, "cannot assign to input 'A'"),
@@ -82,7 +82,7 @@ def test_semantic_error_example_is_valid_until_the_semantic_stage(path, capsys):
     assert semantic.main(["semantic.py", str(path)]) == 1
     err = capsys.readouterr().err
     assert f"Semantic error at line {line}, column {column}: {fragment}" in err
-    assert "1 semantic errors found (0 warnings)" in err
+    assert "1 semantic error found (0 warnings)" in err
 
 
 @pytest.mark.parametrize("path", WARNING_EXAMPLES, ids=ids(WARNING_EXAMPLES))

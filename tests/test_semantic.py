@@ -352,7 +352,7 @@ def test_cli_semantic_error_exits_1_with_position():
     result = run_cli("semantic.py", EXAMPLES / "invalid_semantic" / "undeclared_signal.circ")
     assert result.returncode == 1
     assert "Semantic error at line 4, column 11: 'Z' is not declared" in result.stderr
-    assert "1 semantic errors found (0 warnings)" in result.stderr
+    assert "1 semantic error found (0 warnings)" in result.stderr
     assert "Symbol table" not in result.stdout
 
 

@@ -118,6 +118,7 @@ O `generate.sh` gera o lexer e o parser em `generated/` a partir de `grammar/Cir
 | `src/lexical.py` | Lista os tokens reconhecidos e aponta erros léxicos com linha e coluna |
 | `src/syntactic.py` | Faz o parsing a partir da regra `program`, imprime a árvore sintática (ou a AST com `--ast`) e aponta erros sintáticos com linha e coluna. Se houver erros léxicos, reporta e não faz o parsing |
 | `src/interactive.py` | Analisa uma expressão booleana digitada num prompt ([detalhes](#modo-interativo)) |
+| `src/error_strategy.py` | Mensagens de erro sintático (`expected X, found Y`) e recuperação em modo pânico ([detalhes](#relatório-de-erros)) |
 | `src/ast_builder.py` | Visitor que transforma a árvore de parse na AST ([detalhes](#árvore-sintática-abstrata-ast)) |
 | `src/ast_nodes.py` | As classes dos nós da AST, cada uma com linha e coluna |
 | `src/semantic.py` | Análise semântica sobre a AST: tabela de símbolos, checagem de tipos e de quem dirige cada sinal, laços combinacionais ([detalhes](#análise-semântica)) |
@@ -244,7 +245,11 @@ As posições começam em 1 e as mensagens vão para a saída de erro padrão. A
 | Léxica | Caractere fora da linguagem | `Lexical error at line 4, column 7: invalid character '&'` |
 | Léxica | Real sem dígitos depois do ponto | `Lexical error at line 4, column 20: malformed real number '2.' (missing digit after the decimal point)` |
 | Léxica | Texto sem aspas de fechamento | `Lexical error at line 1, column 9: unclosed string (missing closing quote)` |
-| Sintática | Tokens fora de ordem | `Syntax error at line 5, column 1: found end of file, expected {'@', ';'}` |
+| Sintática | Tokens fora de ordem | `Syntax error at line 5, column 1: expected '@' or ';', found end of file` |
+
+**As mensagens de erro sintático** sempre trazem as três coisas que tornam uma mensagem útil: onde (linha e coluna), o que o parser esperava e o que encontrou, no formato `expected X, found Y`. A mensagem é montada a partir do token que causou o erro e do conjunto de tokens que seriam aceitos ali, com nomes legíveis (`an expression`, `identifier`, `';'`), e não a partir do texto do próprio ANTLR.
+
+**Recuperação (modo pânico).** Depois de um erro sintático, o parser descarta tokens até um ponto seguro e recomeça dali, então um erro dá **uma** mensagem e todo erro real do arquivo continua sendo reportado. Sem isso, um erro deixa o parser no meio de um comando lido pela metade e tudo depois parece errado: nos nossos testes, 3 comandos quebrados davam 5 mensagens (2 delas fantasmas) antes, e dão exatamente 3 agora. Os pontos seguros são os tokens que só aparecem no fim ou no começo de um comando: `;`, e `input`, `output` ou `wire` quando um identificador vem depois. Nunca `AND`, `OR` ou `,`, que aparecem no meio dos comandos. Um `;` também nunca é descartado como token "sobrando", porque isso colaria o próximo comando no quebrado e esconderia os erros dele. A lógica está em `src/error_strategy.py`.
 
 A pasta `examples/` guarda os programas usados pelos testes:
 
@@ -272,7 +277,7 @@ Tokens:
 Grouped: ((NOT A) OR (B AND C))
 
 circuit> A OR
-Syntax error at line 1, column 5: found end of file, expected {'NOT', INT, IDENT, '('}
+Syntax error at line 1, column 5: expected an expression, found end of file
 ```
 
 Comandos: `:help` e `:quit` (também `:q`, Ctrl+D ou Ctrl+C). Para analisar uma expressão e sair (código de saída 0 se válida, 1 se não):
@@ -297,6 +302,7 @@ python -m pytest
 | `tests/test_examples.py` | Cada arquivo de `examples/`, com o resultado esperado e a posição do erro |
 | `tests/test_interactive.py` | O analisador interativo: saída, erros, modo de uma expressão e sessões por pipe |
 | `tests/test_ast.py` | A AST e seu visitor: tipos de nó, formato da precedência, posições, impressão, opção `--ast` |
+| `tests/test_recovery.py` | Recuperação em modo pânico: uma mensagem por erro em 20 cenários, sem erros fantasma, um token danificado nunca dá mais de uma mensagem, entrada aleatória sempre termina |
 | `tests/test_semantic.py` | Cada regra semântica com sua linha e coluna, avisos, laços, tabela de símbolos, equações e a linha de comando |
 
 Opções úteis: `python -m pytest -v` (uma linha por teste) e `python -m pytest tests/test_parser.py -k precedence` (um subconjunto).
@@ -333,7 +339,7 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      regras de lexer e de parser
 ├── generate.sh             regenera o código do ANTLR em generated/
-├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py
+├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py
 ├── examples/               programas válidos e inválidos
 ├── tests/                  suíte do pytest
 └── docs/

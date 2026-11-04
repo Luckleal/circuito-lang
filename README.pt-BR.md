@@ -120,6 +120,7 @@ O `generate.sh` gera o lexer e o parser em `generated/` a partir de `grammar/Cir
 | `src/interactive.py` | Analisa uma expressão booleana digitada num prompt ([detalhes](#modo-interativo)) |
 | `src/ast_builder.py` | Visitor que transforma a árvore de parse na AST ([detalhes](#árvore-sintática-abstrata-ast)) |
 | `src/ast_nodes.py` | As classes dos nós da AST, cada uma com linha e coluna |
+| `src/semantic.py` | Análise semântica sobre a AST: tabela de símbolos, checagem de tipos e de quem dirige cada sinal, laços combinacionais ([detalhes](#análise-semântica)) |
 
 Códigos de saída dos dois analisadores: `0` sem erros, `1` erros encontrados, `2` erro de uso ou arquivo ilegível.
 
@@ -134,15 +135,17 @@ flowchart LR
     B -- "tokens" --> C["Parser<br/>src/syntactic.py"]
     B -. "erro léxico<br/>linha + coluna" .-> E1(["para, saída 1"])
     C -- "árvore de parse" --> V["Construtor da AST (visitor)<br/>src/ast_builder.py"]
-    V -- "AST" --> D["Análise semântica<br/>e simulação"]
+    V -- "AST" --> D["Análise semântica<br/>src/semantic.py"]
     C -. "erro sintático<br/>linha + coluna" .-> E2(["saída 1"])
+    D -. "erro semântico<br/>linha + coluna" .-> E3(["saída 1"])
+    D -- "AST verificada" --> F["Simulação"]
     G[("grammar/Circuit.g4")] -. "generate.sh" .-> B
     G -. "generate.sh" .-> C
     classDef todo stroke-dasharray: 5 5
-    class D todo
+    class F todo
 ```
 
-As duas etapas saem de um único arquivo de gramática. Regras de lexer começam com letra maiúscula e regras de parser com minúscula. A caixa tracejada é a próxima etapa e ainda não existe.
+O lexer e o parser saem de um único arquivo de gramática. Regras de lexer começam com letra maiúscula e regras de parser com minúscula. A caixa tracejada é uma etapa futura e ainda não existe.
 
 ## Árvore sintática abstrata (AST)
 
@@ -176,7 +179,82 @@ A AST é montada por um **visitor**: `src/ast_builder.py` estende a classe `Circ
 | `Constant` | `0` ou `1` |
 | `Not`, `BinaryOp` | Uma porta com seu operando ou operandos. Os parênteses somem: o formato da árvore já diz o agrupamento |
 
-A AST é bem menor que a árvore de parse: `A OR B AND C` tem 5 nós na AST contra 15 na árvore de parse. A análise semântica (E4) vai percorrer essa árvore.
+A AST é bem menor que a árvore de parse: `A OR B AND C` tem 5 nós na AST contra 15 na árvore de parse. A análise semântica percorre essa árvore.
+
+## Análise semântica
+
+A gramática só confere se o programa tem o formato certo. O `src/semantic.py` confere se ele faz sentido: percorre a AST uma vez e reporta **todos** os problemas que encontra (não só o primeiro), com linha e coluna.
+
+```bash
+python src/semantic.py examples/full_adder.circ
+```
+
+Num programa válido ele imprime a tabela de símbolos e cada equação totalmente parentesada, o que deixa a precedência explícita:
+
+```
+Symbol table:
+  A      input   bit
+  ...
+Equations:
+  p = (A XOR B)
+  sum = (p XOR Cin)
+Semantic analysis completed with no errors
+```
+
+**Erros** (o programa é rejeitado, saída 1):
+
+| Regra | Exemplo |
+|---|---|
+| Sinal não declarado | `S = A AND Z;` |
+| Sinal usado antes da declaração | `S = A;` acima de `input A;` |
+| Sinal declarado duas vezes | `input A; wire A;` |
+| Largura de barramento menor que 1 | `input data[0];` |
+| Atribuição a uma entrada | `A = B;` |
+| Sinal atribuído mais de uma vez | `S = A; S = B;` |
+| Índice de barramento fora da faixa | `data[4]` em `data[4]` |
+| Índice em algo que não é barramento | `A[0]` com `input A;` |
+| Barramento inteiro onde se espera um bit | `S = data AND 1;` |
+| Constante diferente de 0 e 1 | `S = A AND 5;` |
+| Saída nunca atribuída | `output S, T;` sem nenhum `T = ...` |
+| Wire lido mas nunca atribuído | `wire t;` usado em `S = A AND t;` |
+| Laço combinacional | `x = y AND A; y = x OR A;` |
+
+**Avisos** (reportados, mas o programa é aceito, saída 0): uma entrada que nunca é usada, e um wire declarado ou atribuído mas nunca usado.
+
+Como funciona: toda porta produz um bit, então a única regra de tipo é que cada operando seja um bit; um barramento inteiro ou um índice inválido é rejeitado onde aparece. Cada bit de um barramento é acompanhado separadamente, então `y[0] = y[1]` é válido, mas `y[0] = y[1]; y[1] = y[0]` é um laço. Os laços são achados com uma busca em profundidade sobre "quais sinais este lê". Se o lexer ou o parser reportarem erro, a etapa semântica não roda. A pasta `examples/invalid_semantic/` tem um arquivo para cada erro.
+
+## Operadores e precedência
+
+Do que liga mais forte ao que liga mais fraco:
+
+| Nível | Operadores | Tipo |
+|---|---|---|
+| 1 | `NOT` | unário |
+| 2 | `AND`, `NAND` | binário, associa à esquerda |
+| 3 | `OR`, `NOR`, `XOR`, `XNOR` | binário, associa à esquerda |
+
+Parênteses mudam a ordem. A precedência está na ordem das alternativas da regra `expr` na gramática, então `NOT A OR B AND C` é lido como `(NOT A) OR (B AND C)`. O `examples/precedence.circ` mostra isso.
+
+## Relatório de erros
+
+As posições começam em 1 e as mensagens vão para a saída de erro padrão. As mensagens do programa são em inglês.
+
+| Etapa | Problema | Mensagem |
+|---|---|---|
+| Léxica | Caractere fora da linguagem | `Lexical error at line 4, column 7: invalid character '&'` |
+| Léxica | Real sem dígitos depois do ponto | `Lexical error at line 4, column 20: malformed real number '2.' (missing digit after the decimal point)` |
+| Léxica | Texto sem aspas de fechamento | `Lexical error at line 1, column 9: unclosed string (missing closing quote)` |
+| Sintática | Tokens fora de ordem | `Syntax error at line 5, column 1: found end of file, expected {'@', ';'}` |
+
+A pasta `examples/` guarda os programas usados pelos testes:
+
+```
+examples/
+├── half_adder.circ   bus.circ   detector.circ   precedence.circ     programas válidos
+├── invalid_lexical/   invalid_character · malformed_number · unclosed_string
+└── invalid_syntax/    extra_symbol · missing_header · missing_operand
+                       missing_semicolon · unclosed_paren
+```
 
 ## Modo interativo
 
@@ -219,6 +297,7 @@ python -m pytest
 | `tests/test_examples.py` | Cada arquivo de `examples/`, com o resultado esperado e a posição do erro |
 | `tests/test_interactive.py` | O analisador interativo: saída, erros, modo de uma expressão e sessões por pipe |
 | `tests/test_ast.py` | A AST e seu visitor: tipos de nó, formato da precedência, posições, impressão, opção `--ast` |
+| `tests/test_semantic.py` | Cada regra semântica com sua linha e coluna, avisos, laços, tabela de símbolos, equações e a linha de comando |
 
 Opções úteis: `python -m pytest -v` (uma linha por teste) e `python -m pytest tests/test_parser.py -k precedence` (um subconjunto).
 
@@ -242,9 +321,9 @@ echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
 |---|---|---|
 | E2 | Especificação e analisador léxico | Pronta |
 | E3 | Analisador sintático, árvore sintática e AST (montada com o visitor) | Pronta |
-| E4 | Análise semântica e execução | Não iniciada |
+| E4 | Análise semântica e execução | Análise semântica pronta; simulação não iniciada |
 
-Ainda não há análise semântica nem simulação. Verificações como declarar antes de usar e restringir constantes a `0` e `1` ficam para a E4 de propósito.
+A análise semântica está completa. Simular o circuito (calcular as saídas, uma tabela-verdade) e desenhá-lo com os símbolos das portas ainda não foram implementados.
 
 ## Estrutura do repositório
 
@@ -254,7 +333,7 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      regras de lexer e de parser
 ├── generate.sh             regenera o código do ANTLR em generated/
-├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py
+├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py
 ├── examples/               programas válidos e inválidos
 ├── tests/                  suíte do pytest
 └── docs/

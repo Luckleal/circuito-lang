@@ -131,3 +131,30 @@ BinaryOp OR
 ```
 
 `python src/syntactic.py --ast file.circ` prints the AST of a program. The semantic analysis stage walks this tree.
+
+## 11. Semantic rules
+
+The grammar only checks the shape of a program. The semantic analysis (`src/semantic.py`) walks the AST and checks the rules below. It reports every violation, in source order, as `Semantic error at line L, column C: ...`; a program with at least one error is rejected. It does not run if the lexer or the parser found an error.
+
+**Symbol table.** Every declared signal has a role (`input`, `output` or `wire`) and a type: `bit`, or `bus[N]` with N bits. A signal is declared once, and before its first use.
+
+**Types.** Every gate produces a bit, so the only type rule is that every operand and every assignment target is a bit. A bus is not a bit: it is used one position at a time (`data[0]`). Each bit of a bus is a separate signal for every rule below.
+
+| # | Rule | Error |
+|---|---|---|
+| 1 | A signal is declared only once | `'A' is already declared` |
+| 2 | A bus has at least 1 bit | `bus width must be at least 1` |
+| 3 | A signal is declared before it is used | `'A' is used before its declaration` / `'A' is not declared` |
+| 4 | An input is never assigned | `cannot assign to input 'A'` |
+| 5 | A signal (or a bus bit) is assigned at most once | `'S' is assigned more than once` |
+| 6 | A bus index is between 0 and width - 1 | `index 4 is out of range for bus 'data'` |
+| 7 | Only a bus can be indexed | `'A' is not a bus and cannot be indexed` |
+| 8 | A bus is never used as a whole where a bit is expected | `bus 'data' cannot be used as a single bit` |
+| 9 | Constants are 0 or 1 | `constant 5 is not valid` |
+| 10 | Every output is assigned | `output 'S' is never assigned` |
+| 11 | A wire that is read is assigned | `wire 't' is read but never assigned` |
+| 12 | No signal depends on itself (no combinational loop) | `combinational loop: x -> y -> x` |
+
+**Warnings** do not reject the program: `input 'A' is never used`, `wire 't' is assigned but never used` and `wire 't' is declared but never used`. A bus is reported only if none of its bits is used.
+
+**Report.** When the analysis succeeds it prints the symbol table and every equation fully parenthesized (`S = ((NOT A) OR (B AND C))`), which shows the precedence the parser chose. Exit codes: `0` no errors (warnings allowed), `1` errors found, `2` usage error or unreadable file.

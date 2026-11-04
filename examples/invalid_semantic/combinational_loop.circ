@@ -1,0 +1,7 @@
+circuit "test";
+input A;
+output S;
+wire x, y;
+x = y AND A;
+y = x OR A;
+S = y;

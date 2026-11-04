@@ -1,0 +1,12 @@
+// full adder: adds three bits using intermediate wires
+circuit "full adder";
+
+input A, B, Cin;
+output sum, carry;
+wire p, g1, g2;
+
+p = A XOR B;
+sum = p XOR Cin;
+g1 = A AND B;
+g2 = p AND Cin;
+carry = g1 OR g2;

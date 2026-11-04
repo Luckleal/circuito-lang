@@ -1,0 +1,8 @@
+circuit "unused signals";
+
+input A, B, C;
+output S;
+wire dead, orphan;
+
+dead = A AND B;
+S = A OR B;

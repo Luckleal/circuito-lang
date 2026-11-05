@@ -186,3 +186,13 @@ A program that passes the semantic analysis is a static combinational circuit, a
 **Timing.** The `@delay` annotation is the propagation delay, in nanoseconds, of the gate in that statement; a statement without it has delay 0. The arrival time of an input is 0. The arrival time of a signal is the largest arrival time among the signals its expression reads, plus its own delay. The critical path is the chain of signals that ends at the output with the largest arrival time. When two chains tie, the one through more gates is reported. The timing is printed only when the program has at least one `@delay`.
 
 Exit codes: `0` simulated, `1` the program has errors, `2` usage error, unreadable file, a value that is missing or is not 0 or 1, or too many inputs for a truth table.
+
+## 13. Web interface
+
+`src/server.py` serves a local interface (`web/`) and a JSON API (`src/api.py`). The API calls the same lexer, parser, AST builder, semantic analysis and simulator described above, and adds no language rules. Programs are only parsed and analyzed; nothing from a request is executed.
+
+```bash
+python src/server.py            # http://127.0.0.1:8765/
+```
+
+The interface presents the concrete syntax tree, the AST and the logic circuit as three different things. Diagnostics keep the line and column of the compiler and also carry character offsets so the editor can underline the offending text. The step-by-step animation shows the evaluation order of a combinational circuit and is not a timing simulation; the critical delay is the one computed by the simulator from `@delay`. The truth table (limited to 16 input bits, as in the simulator) is an aid for checking behaviour, not a proof of correctness.

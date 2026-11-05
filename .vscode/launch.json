@@ -2,21 +2,30 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Circuit: truth table of the current file",
+      "name": "Circuit: simulate the current file (truth table)",
       "type": "debugpy",
       "request": "launch",
       "python": "C:\\Users\\jonas\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
-      "program": "${workspaceFolder}/src/circuit.py",
+      "program": "${workspaceFolder}/src/simulator.py",
       "args": ["${file}"],
       "console": "integratedTerminal"
     },
     {
-      "name": "Circuit: truth table with wires and delay",
+      "name": "Circuit: semantic analysis of the current file",
       "type": "debugpy",
       "request": "launch",
       "python": "C:\\Users\\jonas\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
-      "program": "${workspaceFolder}/src/circuit.py",
-      "args": ["${file}", "--wires", "--delay"],
+      "program": "${workspaceFolder}/src/semantic.py",
+      "args": ["${file}"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Circuit: AST of the current file",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "C:\\Users\\jonas\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "program": "${workspaceFolder}/src/syntactic.py",
+      "args": ["--ast", "${file}"],
       "console": "integratedTerminal"
     },
     {

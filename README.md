@@ -6,8 +6,9 @@ A small language for describing combinational logic circuits.<br>Declare signals
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-202_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-573_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Stage](https://img.shields.io/badge/stage-lexer_+_parser-2EA44F?style=flat-square)
+![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
 [The language](#the-language) ·
 [Install and run](#install-and-run) ·
@@ -15,6 +16,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 [Precedence](#operators-and-precedence) ·
 [Errors](#error-reporting) ·
 [Interactive mode](#interactive-mode) ·
+[Web interface](#web-interface) ·
 [Tests](#tests) ·
 [Status](#project-status) ·
 [Specification](docs/specification.md)
@@ -338,13 +340,28 @@ Commands: `:help` and `:quit` (also `:q`, Ctrl+D or Ctrl+C). To analyze one expr
 python src/interactive.py "NOT A OR B AND C"
 ```
 
+## Web interface
+
+A local web interface runs the real compiler: write or import a `.circ` program, analyze it, inspect the tokens, the concrete syntax tree, the AST, the logic circuit drawn with gate symbols, the step-by-step evaluation and the truth table. It works on desktop and phone and follows the browser language (Portuguese, English, Spanish, French, German, Chinese, Japanese), which can be changed in the header.
+
+```bash
+python src/server.py        # then open http://127.0.0.1:8765/
+```
+
+The server listens on `127.0.0.1` only and needs nothing beyond `requirements.txt`. It calls `lexical.py`, `syntactic.py`, `ast_builder.py`, `semantic.py` and `simulator.py` through `src/api.py`, so the command line and the interface share the same rules. Programs are only parsed and analyzed, never executed.
+
+> [!NOTE]
+> The concrete syntax tree, the AST and the circuit are three different things: the first is how the parser derived the text, the second keeps only what the program means, the third is the netlist of gates and wires. The step-by-step animation shows the evaluation order of a combinational circuit; it is not a timing simulation. `@delay` follows the rule in [Simulation](#simulation). The truth table helps to check behaviour; it does not prove the compiler correct.
+
+In VS Code, press F5 and pick **Circuit: web interface**. The other launch configurations run the simulator, the semantic analysis and the AST on the current file. A minimal syntax-highlighting extension for `.circ` is in `vscode/circuit-language/`.
+
 ## Tests
 
 ```bash
 python -m pytest
 ```
 
-202 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
+573 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
 
 | File | What it covers |
 |---|---|
@@ -382,7 +399,7 @@ echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
 | E3 | Syntactic analyzer, syntax tree and AST (built with the visitor) | Done |
 | E4 | Semantic analysis and execution | Done |
 
-The semantic analysis and the simulation are complete. Drawing the circuit with gate symbols (SVG) is not implemented yet.
+The semantic analysis and the simulation are complete. The local web interface draws the circuit with gate symbols and animates its evaluation (see [Web interface](#web-interface)).
 
 ## Repository layout
 
@@ -392,7 +409,9 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      lexer and parser rules
 ├── generate.sh             regenerates the ANTLR code into generated/
-├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py · simulator.py
+├── web/                    local web interface (HTML, CSS, JS modules)
+├── vscode/                 minimal VS Code extension for .circ
+├── src/                    api.py · server.py · lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py · simulator.py
 ├── examples/               valid and invalid programs
 ├── tests/                  pytest suite
 └── docs/

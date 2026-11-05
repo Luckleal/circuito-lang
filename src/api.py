@@ -17,6 +17,8 @@ Result of `analyze_program(text)`:
   inputs / outputs / wires   bit names in truth-table order; input_groups groups buses
   delays       {"times", "outputs", "critical"} or null (null when no @delay is used)
   table_rows   2 ** number of inputs
+  summary      facts for the written analysis: counts per stage, gate census, depth,
+               equations (one per assignment, from semantic.format_equation) or null
 
 Offsets are Python string indices (Unicode code points).
 """
@@ -29,7 +31,7 @@ from antlr4.tree.Tree import TerminalNode
 from ast_builder import build_ast
 from ast_nodes import Constant, Not, Signal
 from lexical import token_name, tokenize
-from semantic import analyze, bit_label
+from semantic import analyze, bit_label, format_equation
 from simulator import GATES, analyze_timing, build_circuit, evaluate
 from syntactic import parse
 
@@ -207,6 +209,50 @@ def _delay_info(circuit, netlist):
             "outputs": outputs, "critical": critical}
 
 
+
+def _count(items):
+    counts = {}
+    for item in items:
+        counts[item] = counts.get(item, 0) + 1
+    return counts
+
+
+def _count_nodes(tree):
+    return 1 + sum(_count_nodes(child) for child in tree.get("children", []))
+
+
+def _circuit_summary(circuit, netlist):
+    """Facts about the checked circuit: gate census, logic depth, equations."""
+    nodes = {n["id"]: n for n in netlist["nodes"]}
+    depth = {}
+    for node in netlist["nodes"]:
+        depth[node["id"]] = 0 if node["type"] in ("input", "const") else             1 + max((depth[i] for i in node["inputs"]), default=0) - (1 if node["type"] in ("buffer", "output") else 0)
+    gates = [n for n in netlist["nodes"] if n["type"] == "gate"]
+    return {
+        "gate_count": len(gates),
+        "gate_kinds": _count(n["op"] for n in gates),
+        "logic_depth": max((depth[n["id"]] for n in netlist["nodes"] if n["type"] == "output"), default=0),
+        "inputs": len(circuit.inputs), "outputs": len(circuit.outputs), "wires": len(circuit.wires),
+        "equations": [format_equation(circuit.drivers[bit]) for bit in circuit.order],
+        "uses_delays": circuit.has_delays,
+    }
+
+
+def _why(netlist, values):
+    """For each output bit, the derivation of its value: a tree of {label, op, value, children}."""
+    nodes = {n["id"]: n for n in netlist["nodes"]}
+
+    def build(node_id):
+        node = nodes[node_id]
+        entry = {"id": node_id, "type": node["type"], "label": node["label"], "op": node.get("op"),
+                 "net": node.get("net"), "value": values[node_id], "span": node.get("span")}
+        if node["type"] in ("gate", "buffer"):
+            entry["children"] = [build(i) for i in node["inputs"]]
+        return entry
+
+    return {n["bit"]: build(n["inputs"][0]) for n in netlist["nodes"] if n["type"] == "output"}
+
+
 # ---------- entry points ----------
 
 def analyze_program(text):
@@ -218,8 +264,9 @@ def analyze_program(text):
         "diagnostics": [], "tokens": [_token_info(t) for t in tokens],
         "cst": None, "ast": None, "circuit": None, "name": None,
         "inputs": [], "outputs": [], "wires": [], "input_groups": [],
-        "delays": None, "table_rows": None,
+        "delays": None, "table_rows": None, "summary": None,
     }
+    result["summary"] = {"tokens": len(tokens), "token_kinds": _count(token_name(t) for t in tokens)}
     diagnostics = result["diagnostics"]
 
     parsed = parse(text)
@@ -236,6 +283,8 @@ def analyze_program(text):
     result["stages"]["syntactic"] = "ok"
     result["cst"] = build_cst(parsed.tree, parsed.parser)
     result["ast"] = ast_to_dict(program, source)
+    result["summary"].update({"cst_nodes": _count_nodes(result["cst"]), "ast_nodes": _count_nodes(result["ast"]),
+                              "statements": len(program.statements)})
 
     checked = analyze(program)
     for severity, items in (("error", checked.errors), ("warning", checked.warnings)):
@@ -258,6 +307,7 @@ def analyze_program(text):
         "delays": _delay_info(circuit, netlist),
         "table_rows": 2 ** len(circuit.inputs),
     })
+    result["summary"].update(_circuit_summary(circuit, netlist))
     return result
 
 
@@ -282,7 +332,8 @@ def _bit_from_label(circuit, label):
 def simulate_program(text, inputs):
     """Evaluate the program for one input combination ({bit label: 0|1}; missing bits are 0).
 
-    Returns {inputs, values: {node id: 0|1}, bits: {label: 0|1}, steps: [...]}; `steps` lists,
+    Returns {inputs, values: {node id: 0|1}, bits: {label: 0|1}, steps: [...], why: {...}}; `why`
+    maps each output to the derivation tree of its value; `steps` lists,
     in dependency order, how each node got its value (the basis of the didactic animation).
     """
     source = Source(text)
@@ -313,7 +364,8 @@ def simulate_program(text, inputs):
                       "inputs": [{"from": o, "value": v} for o, v in zip(node["inputs"], args)],
                       "output": result})
     return {"inputs": {bit_label(b): v for b, v in given.items()},
-            "values": values, "bits": {bit_label(b): v for b, v in bits.items()}, "steps": steps}
+            "values": values, "bits": {bit_label(b): v for b, v in bits.items()}, "steps": steps,
+            "why": _why(netlist, values)}
 
 
 def _render(headers, rows, n_inputs):

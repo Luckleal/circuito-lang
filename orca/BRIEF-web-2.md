@@ -24,3 +24,6 @@ Switching language changes every visible string; first load follows the browser 
 - Browser console shows 1 error on load: find and fix it.
 - Result tab bar overflows horizontally on 929px width (the last tab is clipped); make tabs wrap or scroll with visible affordance.
 - Mobile layout must be tested; render the circuit for `full_adder` and `delays` examples and check readability and wire crossings.
+
+## 5. Scope split (parallel work)
+Another agent owns `web/js/circuit.js`, `web/js/player.js`, `web/js/gates.js`, `web/js/table.js`, `web/css/circuit.css` (see `orca/BRIEF-web-3.md`). Do NOT edit those. You own everything else in `web/` (index.html, styles.css, main.js, editor.js, tree.js, api.js, panzoom.js, i18n files). Do not use a browser tool (it is not approved in this environment); check syntax with `node --check` and the API with curl instead. Add a footer to index.html: "circuito-lang" + "Desenvolvido por Jonas Gabriel (github.com/jonasssgabriel) e Lucas Leal (github.com/Luckleal)" + link to the repository https://github.com/Luckleal/circuito-lang, translated through i18n, discreet, one line on desktop and wrapping on mobile.

@@ -239,3 +239,32 @@ def test_http_blocks_path_traversal(base_url):
             raise AssertionError("should not be served")
         except urllib.error.HTTPError as e:
             assert e.code == 404
+
+
+# ---------- facts for the written analysis ----------
+
+def test_summary_counts_come_from_the_real_stages():
+    r = api.analyze_program(read(EXAMPLES / "full_adder.circ"))
+    s = r["summary"]
+    assert s["gate_count"] == 5 and s["gate_kinds"] == {"XOR": 2, "AND": 2, "OR": 1}
+    assert (s["inputs"], s["outputs"], s["wires"]) == (3, 2, 3)
+    assert s["logic_depth"] == 3 and s["uses_delays"] is False
+    assert "sum = (p XOR Cin)" in s["equations"]
+    assert s["tokens"] == len(r["tokens"]) and s["ast_nodes"] < s["cst_nodes"]
+
+
+def test_summary_exists_even_when_later_stages_fail():
+    r = api.analyze_program('circuit "t";\ninput A\n')
+    assert r["summary"]["tokens"] > 0 and "gate_count" not in r["summary"]
+
+
+def test_why_explains_every_output_with_values():
+    sim = api.simulate_program(read(EXAMPLES / "full_adder.circ"), {"A": 1, "B": 1, "Cin": 0})
+    carry = sim["why"]["carry"]
+    assert carry["op"] == "OR" and carry["value"] == sim["bits"]["carry"] == 1
+    assert [c["value"] for c in carry["children"]] == [1, 0]     # g1 = A AND B, g2 = p AND Cin
+
+    def leaves(node):
+        return [node] if not node.get("children") else [x for c in node["children"] for x in leaves(c)]
+    assert {l["label"] for l in leaves(carry)} <= {"A", "B", "Cin"}
+    assert set(sim["why"]) == {"sum", "carry"}

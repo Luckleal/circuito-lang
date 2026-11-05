@@ -5,6 +5,7 @@ import {
   getNodePorts,
   nodeDisplayName,
   formatFormula,
+  explainNodeRule,
   drawNodeShape,
   translate,
 } from './gates.js';
@@ -33,6 +34,7 @@ const STRINGS = {
     'circuit.field_op': 'Operação',
     'circuit.field_inputs': 'Entradas',
     'circuit.field_output': 'Saída',
+    'circuit.field_why': 'Por quê',
     'circuit.field_net': 'Rede (net)',
     'circuit.field_delay': 'Atraso',
     'circuit.show_code': 'Mostrar no código',
@@ -61,6 +63,7 @@ const STRINGS = {
     'circuit.field_op': 'Operation',
     'circuit.field_inputs': 'Inputs',
     'circuit.field_output': 'Output',
+    'circuit.field_why': 'Why',
     'circuit.field_net': 'Net name',
     'circuit.field_delay': 'Delay',
     'circuit.show_code': 'Show in code',
@@ -89,6 +92,7 @@ const STRINGS = {
     'circuit.field_op': 'Operación',
     'circuit.field_inputs': 'Entradas',
     'circuit.field_output': 'Salida',
+    'circuit.field_why': 'Por qué',
     'circuit.field_net': 'Red (net)',
     'circuit.field_delay': 'Retardo',
     'circuit.show_code': 'Mostrar en el código',
@@ -117,6 +121,7 @@ const STRINGS = {
     'circuit.field_op': 'Opération',
     'circuit.field_inputs': 'Entrées',
     'circuit.field_output': 'Sortie',
+    'circuit.field_why': 'Pourquoi',
     'circuit.field_net': 'Fil (net)',
     'circuit.field_delay': 'Délai',
     'circuit.show_code': 'Afficher dans le code',
@@ -145,6 +150,7 @@ const STRINGS = {
     'circuit.field_op': 'Operation',
     'circuit.field_inputs': 'Eingänge',
     'circuit.field_output': 'Ausgang',
+    'circuit.field_why': 'Warum',
     'circuit.field_net': 'Netz (net)',
     'circuit.field_delay': 'Verzögerung',
     'circuit.show_code': 'Im Code zeigen',
@@ -173,6 +179,7 @@ const STRINGS = {
     'circuit.field_op': '运算',
     'circuit.field_inputs': '输入',
     'circuit.field_output': '输出',
+    'circuit.field_why': '原因',
     'circuit.field_net': '信号网 (net)',
     'circuit.field_delay': '延迟',
     'circuit.show_code': '在代码中显示',
@@ -201,6 +208,7 @@ const STRINGS = {
     'circuit.field_op': '演算',
     'circuit.field_inputs': '入力',
     'circuit.field_output': '出力',
+    'circuit.field_why': '理由',
     'circuit.field_net': 'ネット名',
     'circuit.field_delay': '遅延',
     'circuit.show_code': 'コード内で表示',
@@ -565,8 +573,8 @@ export function computeCircuitLayout(circuit) {
   const layerX = [95];
   for (let c = 0; c < numLayers - 1; c++) {
     const netCount = channelNets[c].size;
-    const extraTrackSpace = Math.max(0, netCount - 2) * 16;
-    const gap = 188 + extraTrackSpace;
+    const extraTrackSpace = Math.max(0, netCount - 2) * 13;
+    const gap = 154 + extraTrackSpace;
     layerX.push(layerX[c] + gap);
   }
 
@@ -994,8 +1002,10 @@ export function renderCircuit(host, circuit, simulation, options = {}) {
   critBtn.type = 'button';
   critBtn.className = `circuit-tool-btn critical-toggle-btn ${session.criticalEnabled && timing.hasDelays ? 'is-active' : ''}`;
   critBtn.disabled = !timing.hasDelays;
+  critBtn.title = t('circuit.critical_toggle');
+  critBtn.setAttribute('aria-label', t('circuit.critical_toggle'));
   critBtn.setAttribute('aria-pressed', String(Boolean(session.criticalEnabled && timing.hasDelays)));
-  critBtn.innerHTML = `<span class="crit-dot" aria-hidden="true"></span><span>${t('circuit.critical_toggle')}</span>`;
+  critBtn.innerHTML = `<span class="crit-dot" aria-hidden="true"></span><svg class="tool-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1.5,9.5 4.8,9.5 6.8,3.8 9.4,12.2 11.4,8 14.5,8"/></svg><span class="btn-label">${t('circuit.critical_toggle')}</span>`;
   critBtn.onclick = () => {
     session.criticalEnabled = !session.criticalEnabled;
     renderCircuit(host, circuit, simulation, options);
@@ -1006,7 +1016,7 @@ export function renderCircuit(host, circuit, simulation, options = {}) {
     const critPill = document.createElement('span');
     critPill.className = `circuit-crit-pill ${session.criticalEnabled ? 'is-active' : ''}`;
     const timeStr = Number.isInteger(timing.time) ? timing.time.toFixed(1) : String(timing.time);
-    critPill.textContent = t('circuit.critical_pill', { time: timeStr });
+    critPill.innerHTML = `<span class="crit-pill-full">${t('circuit.critical_pill', { time: timeStr })}</span><span class="crit-pill-short">${timeStr} ns</span>`;
     leftTools.append(critPill);
   } else {
     const noDelayPill = document.createElement('span');
@@ -1034,22 +1044,24 @@ export function renderCircuit(host, circuit, simulation, options = {}) {
 
   const btnFit = document.createElement('button');
   btnFit.type = 'button';
-  btnFit.className = 'circuit-tool-btn';
+  btnFit.className = 'circuit-tool-btn fit-btn';
   btnFit.title = t('circuit.fit_title');
   btnFit.setAttribute('aria-label', t('circuit.fit_title'));
-  btnFit.textContent = t('circuit.fit');
+  btnFit.innerHTML = `<svg class="tool-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2.5 6V3.5a1 1 0 0 1 1-1H6M10 2.5h2.5a1 1 0 0 1 1 1V6M13.5 10v2.5a1 1 0 0 1-1 1H10M6 13.5H3.5a1 1 0 0 1-1-1V10"/></svg><span class="btn-label">${t('circuit.fit')}</span>`;
 
   const btnSvg = document.createElement('button');
   btnSvg.type = 'button';
   btnSvg.className = 'circuit-tool-btn export-btn';
   btnSvg.title = t('circuit.export_svg_title');
-  btnSvg.innerHTML = `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v7.5M5 7.5L8 10.5 11 7.5M3 13h10"/></svg><span>${t('circuit.export_svg')}</span>`;
+  btnSvg.setAttribute('aria-label', t('circuit.export_svg_title'));
+  btnSvg.innerHTML = `<svg class="tool-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v7.5M5 7.5L8 10.5 11 7.5M3 13h10"/></svg><span class="btn-label">${t('circuit.export_svg')}</span>`;
 
   const btnPng = document.createElement('button');
   btnPng.type = 'button';
   btnPng.className = 'circuit-tool-btn export-btn';
   btnPng.title = t('circuit.export_png_title');
-  btnPng.innerHTML = `<svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><circle cx="6" cy="6" r="1"/><path d="M3 12l3.5-3.5L9 11l2-2 2.5 2.5"/></svg><span>${t('circuit.export_png')}</span>`;
+  btnPng.setAttribute('aria-label', t('circuit.export_png_title'));
+  btnPng.innerHTML = `<svg class="tool-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="1.5"/><circle cx="6" cy="6" r="1"/><path d="M3 12l3.5-3.5L9 11l2-2 2.5 2.5"/></svg><span class="btn-label">${t('circuit.export_png')}</span>`;
 
   rightTools.append(btnZoomOut, btnZoomIn, btnFit, btnSvg, btnPng);
   toolbar.append(leftTools, rightTools);
@@ -1081,7 +1093,7 @@ export function renderCircuit(host, circuit, simulation, options = {}) {
     const firstP = pos.get(bus.nodes[0].id);
     const lastP = pos.get(bus.nodes[bus.nodes.length - 1].id);
     if (!firstP || !lastP) continue;
-    const bx = firstP.x - 66;
+    const bx = firstP.x - 70;
     const topY = firstP.y - 18;
     const botY = lastP.y + 18;
     const midY = (topY + botY) / 2;
@@ -1231,7 +1243,6 @@ export function renderCircuit(host, circuit, simulation, options = {}) {
         e.stopPropagation();
         session.selectedId = edge.id;
         session.selectedKind = 'edge';
-        if (srcNode.span) dispatchSourceSelection(srcNode.span, options.onSelect);
         renderCircuit(host, circuit, simulation, options);
       };
       hit.addEventListener('click', selectWire);
@@ -1313,7 +1324,6 @@ export function renderCircuit(host, circuit, simulation, options = {}) {
       }
       session.selectedId = n.id;
       session.selectedKind = 'node';
-      if (n.span) dispatchSourceSelection(n.span, options.onSelect);
       renderCircuit(host, circuit, simulation, options);
     });
 
@@ -1330,7 +1340,6 @@ export function renderCircuit(host, circuit, simulation, options = {}) {
         e.stopPropagation();
         session.selectedId = n.id;
         session.selectedKind = 'node';
-        if (n.span) dispatchSourceSelection(n.span, options.onSelect);
         renderCircuit(host, circuit, simulation, options);
         return;
       }
@@ -1442,8 +1451,6 @@ function navigateNetlistKeyboard(currentNodeId, key, circuit, layerItems, host, 
   if (nextId && byId.has(nextId)) {
     session.selectedId = nextId;
     session.selectedKind = 'node';
-    const nextNode = byId.get(nextId);
-    if (nextNode?.span) dispatchSourceSelection(nextNode.span, options.onSelect);
     renderCircuit(host, circuit, simulation, options);
     const el = host.querySelector(`[data-node-id="${CSS.escape(nextId)}"]`);
     el?.focus();
@@ -1538,10 +1545,12 @@ function renderInspectorPanel(circuit, byId, getValue, options) {
   const grid = document.createElement('dl');
   grid.className = 'inspector-grid';
 
-  const addRow = (label, value) => {
+  const addRow = (label, value, rowClass = '') => {
     const dt = document.createElement('dt');
+    if (rowClass) dt.className = `${rowClass}-dt`;
     dt.textContent = label;
     const dd = document.createElement('dd');
+    if (rowClass) dd.className = `${rowClass}-dd`;
     dd.textContent = value;
     grid.append(dt, dd);
   };
@@ -1552,6 +1561,11 @@ function renderInspectorPanel(circuit, byId, getValue, options) {
     inputPairs.length ? inputPairs.map(p => `${p.name} = ${p.val}`).join(', ') : t('circuit.none'),
   );
   addRow(t('circuit.field_output'), String(outVal));
+  addRow(
+    t('circuit.field_why'),
+    explainNodeRule(targetNode, inputPairs.map(p => p.val), outVal),
+    'inspector-why',
+  );
   addRow(t('circuit.field_net'), targetNode.net || targetNode.bit || t('circuit.none'));
   addRow(
     t('circuit.field_delay'),
@@ -1577,6 +1591,8 @@ function setupCircuitPanZoom(stage, svg, world, { initialTransform, onTransformC
   const pointers = new Map();
   let dragStart = null;
   let lastPinchDist = 0;
+  let userAdjusted = Boolean(initialTransform);
+  let lastBoxKey = '';
 
   function apply() {
     world.setAttribute('transform', `translate(${state.x} ${state.y}) scale(${state.scale})`);
@@ -1587,28 +1603,23 @@ function setupCircuitPanZoom(stage, svg, world, { initialTransform, onTransformC
   function fit() {
     const bounds = world.getBBox();
     const box = svg.getBoundingClientRect();
-    if (!bounds.width || !box.width) return;
-    const padX = box.width < 520 ? 28 : 56;
-    const padY = box.height < 420 ? 32 : 56;
+    if (!bounds.width || !box.width || !box.height) return false;
+    lastBoxKey = `${Math.round(box.width)}x${Math.round(box.height)}`;
+    const padX = box.width < 520 ? 22 : 48;
+    const padY = box.height < 420 ? 22 : 48;
     const scaleX = (box.width - padX) / bounds.width;
     const scaleY = (box.height - padY) / bounds.height;
     const fitBoth = Math.min(scaleX, scaleY);
 
-    // Ensure gates are comfortably large (~64x48 CSS px minimum at fit; gate SVG body is 76x52)
-    const minComfortableScale = box.width < 520 ? 0.5 : 0.6;
-    state.scale = Math.min(1.45, Math.max(minComfortableScale, fitBoth));
-
-    if (bounds.width * state.scale > box.width - padX) {
-      // If a wide circuit at comfortable scale exceeds viewport width, align left so inputs are visible and user can pan right
-      state.x = Math.round(padX / 2 - bounds.x * state.scale);
-    } else {
-      state.x = Math.round((box.width - bounds.width * state.scale) / 2 - bounds.x * state.scale);
-    }
+    state.scale = Math.min(1.35, Math.max(0.2, fitBoth));
+    state.x = Math.round((box.width - bounds.width * state.scale) / 2 - bounds.x * state.scale);
     state.y = Math.round((box.height - bounds.height * state.scale) / 2 - bounds.y * state.scale);
     apply();
+    return true;
   }
 
   function resetOneToOne() {
+    userAdjusted = true;
     const bounds = world.getBBox();
     const box = svg.getBoundingClientRect();
     state.scale = 1;
@@ -1620,7 +1631,8 @@ function setupCircuitPanZoom(stage, svg, world, { initialTransform, onTransformC
   }
 
   function zoom(factor, cx = svg.clientWidth / 2, cy = svg.clientHeight / 2) {
-    const next = Math.min(3.2, Math.max(0.22, state.scale * factor));
+    userAdjusted = true;
+    const next = Math.min(3.2, Math.max(0.2, state.scale * factor));
     state.x = cx - (cx - state.x) * (next / state.scale);
     state.y = cy - (cy - state.y) * (next / state.scale);
     state.scale = next;
@@ -1637,6 +1649,7 @@ function setupCircuitPanZoom(stage, svg, world, { initialTransform, onTransformC
   svg.addEventListener('dblclick', e => {
     if (e.target.closest('[data-action]')) return;
     e.preventDefault();
+    userAdjusted = false;
     fit();
   });
 
@@ -1660,6 +1673,7 @@ function setupCircuitPanZoom(stage, svg, world, { initialTransform, onTransformC
       }
       lastPinchDist = dist;
     } else if (dragStart) {
+      userAdjusted = true;
       state.x += e.clientX - prev.x;
       state.y += e.clientY - prev.y;
       apply();
@@ -1674,13 +1688,40 @@ function setupCircuitPanZoom(stage, svg, world, { initialTransform, onTransformC
   svg.addEventListener('pointerup', endPointer);
   svg.addEventListener('pointercancel', endPointer);
 
+  if (typeof ResizeObserver !== 'undefined') {
+    const ro = new ResizeObserver(() => {
+      if (!svg.isConnected) {
+        ro.disconnect();
+        return;
+      }
+      const box = svg.getBoundingClientRect();
+      if (!box.width || !box.height) return;
+      const key = `${Math.round(box.width)}x${Math.round(box.height)}`;
+      if (key !== lastBoxKey && (!userAdjusted || !lastBoxKey)) {
+        fit();
+      }
+    });
+    ro.observe(svg);
+  }
+
   if (initialTransform) {
+    const box = svg.getBoundingClientRect();
+    if (box.width && box.height) {
+      lastBoxKey = `${Math.round(box.width)}x${Math.round(box.height)}`;
+    }
     apply();
   } else {
     requestAnimationFrame(fit);
   }
 
-  return { fit, zoom, resetOneToOne };
+  return {
+    fit() {
+      userAdjusted = false;
+      fit();
+    },
+    zoom,
+    resetOneToOne,
+  };
 }
 
 // Standalone SVG & PNG export with embedded dark theme styles

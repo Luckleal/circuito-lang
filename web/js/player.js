@@ -120,7 +120,10 @@ const ICONS = {
   pause: `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5.5" y1="3.5" x2="5.5" y2="12.5"/><line x1="10.5" y1="3.5" x2="10.5" y2="12.5"/></svg>`,
   next: `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="5.5,3.5 10.5,8 5.5,12.5"/></svg>`,
   end: `<svg viewBox="0 0 16 16" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3.5,3.5 10,8 3.5,12.5"/><line x1="12.5" y1="3.5" x2="12.5" y2="12.5"/></svg>`,
+  scrubber: `<svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="2" y1="8" x2="14" y2="8"/><circle cx="5.5" cy="8" r="2" fill="currentColor"/><circle cx="11" cy="8" r="1.5"/></svg>`,
 };
+
+let scrubberExpanded = false;
 
 export function createPlayerController(onChange) {
   let steps = [];
@@ -288,7 +291,7 @@ export function renderPlayerBar(host, controller) {
   const { stepIndex, totalSteps, playing, speed, currentStep, inputs } = state;
 
   host.replaceChildren();
-  host.className = 'circuit-player';
+  host.className = `circuit-player ${scrubberExpanded ? 'is-scrubber-open' : ''}`;
 
   // Top slim control bar
   const bar = document.createElement('div');
@@ -340,7 +343,8 @@ export function renderPlayerBar(host, controller) {
   btnEnd.className = `player-btn show-result-btn ${stepIndex < totalSteps ? 'is-highlighted' : ''}`;
   btnEnd.disabled = totalSteps === 0 || stepIndex >= totalSteps;
   btnEnd.title = t('player.show_result_title');
-  btnEnd.innerHTML = `${ICONS.end}<span>${t('player.show_result')}</span>`;
+  btnEnd.setAttribute('aria-label', t('player.show_result'));
+  btnEnd.innerHTML = `${ICONS.end}<span class="player-btn-label">${t('player.show_result')}</span>`;
   btnEnd.onclick = () => controller.showResult();
 
   transport.append(btnReset, btnPrev, btnPlay, btnNext, btnEnd);
@@ -405,13 +409,27 @@ export function renderPlayerBar(host, controller) {
   };
   scrubberWrap.append(scrubber);
 
-  // Step counter "3 / 7" + Speed (0.25x - 4x)
+  // Step counter "3 / 7" + Collapsible Scrubber Toggle + Speed (0.25x - 4x)
   const meta = document.createElement('div');
   meta.className = 'player-meta';
 
   const counter = document.createElement('span');
   counter.className = 'player-counter';
   counter.textContent = `${stepIndex} / ${totalSteps}`;
+
+  const scrubberToggle = document.createElement('button');
+  scrubberToggle.type = 'button';
+  scrubberToggle.className = `player-btn icon-btn player-scrubber-toggle ${scrubberExpanded ? 'is-active' : ''}`;
+  scrubberToggle.title = t('player.scrubber');
+  scrubberToggle.setAttribute('aria-label', t('player.scrubber'));
+  scrubberToggle.setAttribute('aria-expanded', String(scrubberExpanded));
+  scrubberToggle.innerHTML = ICONS.scrubber;
+  scrubberToggle.onclick = () => {
+    scrubberExpanded = !scrubberExpanded;
+    host.classList.toggle('is-scrubber-open', scrubberExpanded);
+    scrubberToggle.classList.toggle('is-active', scrubberExpanded);
+    scrubberToggle.setAttribute('aria-expanded', String(scrubberExpanded));
+  };
 
   const speedLabel = document.createElement('label');
   speedLabel.className = 'player-speed';
@@ -430,7 +448,7 @@ export function renderPlayerBar(host, controller) {
   speedSelect.onchange = e => controller.setSpeed(Number(e.target.value));
   speedLabel.append(speedSpan, speedSelect);
 
-  meta.append(counter, speedLabel);
+  meta.append(counter, scrubberToggle, speedLabel);
   bar.append(transport, scrubberWrap, meta);
 
   // Explanation & didactic note row

@@ -23,6 +23,29 @@ const STRINGS = {
     'explain.BUF': '{formula} — copia o sinal de entrada sem alteração',
     'explain.CONST': 'CONST = {out} — nível lógico constante {out}',
     'explain.OUTPUT': 'Saída {net} = {out} — terminal recebe o sinal final ({out})',
+    'rule.AND.1': 'AND = 1 só quando todas as entradas são 1',
+    'rule.AND.0': 'AND = 1 só quando todas as entradas são 1 (há entrada em 0)',
+    'rule.AND.?': 'AND = 1 só quando todas as entradas são 1',
+    'rule.OR.1': 'OR = 1 quando pelo menos uma entrada é 1',
+    'rule.OR.0': 'OR = 1 quando pelo menos uma entrada é 1 (todas são 0)',
+    'rule.OR.?': 'OR = 1 quando pelo menos uma entrada é 1',
+    'rule.NOT': 'NOT inverte a entrada ({in0} → {out})',
+    'rule.XOR.1': 'XOR = 1 quando as entradas são diferentes',
+    'rule.XOR.0': 'XOR = 1 quando as entradas são diferentes (entradas iguais)',
+    'rule.XOR.?': 'XOR = 1 quando as entradas são diferentes',
+    'rule.NAND.0': 'NAND = 0 só quando todas as entradas são 1 (AND invertido)',
+    'rule.NAND.1': 'NAND = 1 quando pelo menos uma entrada é 0 (AND invertido)',
+    'rule.NAND.?': 'NAND = 0 só quando todas as entradas são 1 (AND invertido)',
+    'rule.NOR.1': 'NOR = 1 só quando todas as entradas são 0 (OR invertido)',
+    'rule.NOR.0': 'NOR = 0 quando pelo menos uma entrada é 1 (OR invertido)',
+    'rule.NOR.?': 'NOR = 1 só quando todas as entradas são 0 (OR invertido)',
+    'rule.XNOR.1': 'XNOR = 1 quando as entradas são iguais',
+    'rule.XNOR.0': 'XNOR = 1 quando as entradas são iguais (entradas diferentes)',
+    'rule.XNOR.?': 'XNOR = 1 quando as entradas são iguais',
+    'rule.BUF': 'O buffer copia a entrada sem alteração ({in0} → {out})',
+    'rule.CONST': 'Constante mantém nível lógico fixo em {out}',
+    'rule.INPUT': 'Entrada controlada pelo chaveador (valor atual {out})',
+    'rule.OUTPUT': 'Terminal de saída recebe o sinal final ({out})',
   },
   'en': {
     'gate.input': 'Input',
@@ -48,6 +71,29 @@ const STRINGS = {
     'explain.BUF': '{formula} because buffer copies the input signal unchanged',
     'explain.CONST': 'CONST = {out} — constant logic level {out}',
     'explain.OUTPUT': 'Output {net} = {out} — terminal receives final signal ({out})',
+    'rule.AND.1': 'AND = 1 only when all inputs are 1',
+    'rule.AND.0': 'AND = 1 only when all inputs are 1 (an input is 0)',
+    'rule.AND.?': 'AND = 1 only when all inputs are 1',
+    'rule.OR.1': 'OR = 1 when at least one input is 1',
+    'rule.OR.0': 'OR = 1 when at least one input is 1 (all are 0)',
+    'rule.OR.?': 'OR = 1 when at least one input is 1',
+    'rule.NOT': 'NOT inverts its input ({in0} → {out})',
+    'rule.XOR.1': 'XOR = 1 when inputs differ',
+    'rule.XOR.0': 'XOR = 1 when inputs differ (inputs are equal)',
+    'rule.XOR.?': 'XOR = 1 when inputs differ',
+    'rule.NAND.0': 'NAND = 0 only when all inputs are 1 (inverted AND)',
+    'rule.NAND.1': 'NAND = 1 when at least one input is 0 (inverted AND)',
+    'rule.NAND.?': 'NAND = 0 only when all inputs are 1 (inverted AND)',
+    'rule.NOR.1': 'NOR = 1 only when all inputs are 0 (inverted OR)',
+    'rule.NOR.0': 'NOR = 0 when at least one input is 1 (inverted OR)',
+    'rule.NOR.?': 'NOR = 1 only when all inputs are 0 (inverted OR)',
+    'rule.XNOR.1': 'XNOR = 1 when inputs are equal',
+    'rule.XNOR.0': 'XNOR = 1 when inputs are equal (inputs differ)',
+    'rule.XNOR.?': 'XNOR = 1 when inputs are equal',
+    'rule.BUF': 'Buffer copies its input unchanged ({in0} → {out})',
+    'rule.CONST': 'Constant holds fixed logic level {out}',
+    'rule.INPUT': 'Input driven by toggle switch (current value {out})',
+    'rule.OUTPUT': 'Output terminal receives final signal ({out})',
   },
   'es': {
     'gate.input': 'Entrada',
@@ -73,6 +119,29 @@ const STRINGS = {
     'explain.BUF': '{formula} — copia la señal de entrada sin cambios',
     'explain.CONST': 'CONST = {out} — nivel lógico constante {out}',
     'explain.OUTPUT': 'Salida {net} = {out} — el terminal recibe la señal ({out})',
+    'rule.AND.1': 'AND = 1 solo cuando todas las entradas son 1',
+    'rule.AND.0': 'AND = 1 solo cuando todas las entradas son 1 (hay una en 0)',
+    'rule.AND.?': 'AND = 1 solo cuando todas las entradas son 1',
+    'rule.OR.1': 'OR = 1 cuando al menos una entrada es 1',
+    'rule.OR.0': 'OR = 1 cuando al menos una entrada es 1 (todas son 0)',
+    'rule.OR.?': 'OR = 1 cuando al menos una entrada es 1',
+    'rule.NOT': 'NOT invierte la entrada ({in0} → {out})',
+    'rule.XOR.1': 'XOR = 1 cuando las entradas son diferentes',
+    'rule.XOR.0': 'XOR = 1 cuando las entradas son diferentes (son iguales)',
+    'rule.XOR.?': 'XOR = 1 cuando las entradas son diferentes',
+    'rule.NAND.0': 'NAND = 0 solo cuando todas las entradas son 1 (AND invertido)',
+    'rule.NAND.1': 'NAND = 1 cuando al menos una entrada es 0 (AND invertido)',
+    'rule.NAND.?': 'NAND = 0 solo cuando todas las entradas son 1 (AND invertido)',
+    'rule.NOR.1': 'NOR = 1 solo cuando todas las entradas son 0 (OR invertido)',
+    'rule.NOR.0': 'NOR = 0 cuando al menos una entrada es 1 (OR invertido)',
+    'rule.NOR.?': 'NOR = 1 solo cuando todas las entradas son 0 (OR invertido)',
+    'rule.XNOR.1': 'XNOR = 1 cuando las entradas son iguales',
+    'rule.XNOR.0': 'XNOR = 1 cuando las entradas son iguales (son diferentes)',
+    'rule.XNOR.?': 'XNOR = 1 cuando las entradas son iguales',
+    'rule.BUF': 'El buffer copia la entrada sin cambios ({in0} → {out})',
+    'rule.CONST': 'Constante mantiene nivel lógico fijo en {out}',
+    'rule.INPUT': 'Entrada controlada por el interruptor (valor {out})',
+    'rule.OUTPUT': 'El terminal de salida recibe la señal final ({out})',
   },
   'fr': {
     'gate.input': 'Entrée',
@@ -98,6 +167,29 @@ const STRINGS = {
     'explain.BUF': '{formula} car le tampon copie le signal sans modification',
     'explain.CONST': 'CONST = {out} — niveau logique constant {out}',
     'explain.OUTPUT': 'Sortie {net} = {out} — la borne reçoit le signal ({out})',
+    'rule.AND.1': 'AND = 1 seulement quand toutes les entrées valent 1',
+    'rule.AND.0': 'AND = 1 seulement quand toutes les entrées valent 1 (une entrée vaut 0)',
+    'rule.AND.?': 'AND = 1 seulement quand toutes les entrées valent 1',
+    'rule.OR.1': 'OR = 1 quand au moins une entrée vaut 1',
+    'rule.OR.0': 'OR = 1 quand au moins une entrée vaut 1 (toutes valent 0)',
+    'rule.OR.?': 'OR = 1 quand au moins une entrée vaut 1',
+    'rule.NOT': 'NOT inverse l’entrée ({in0} → {out})',
+    'rule.XOR.1': 'XOR = 1 quand les entrées sont différentes',
+    'rule.XOR.0': 'XOR = 1 quand les entrées sont différentes (entrées identiques)',
+    'rule.XOR.?': 'XOR = 1 quand les entrées sont différentes',
+    'rule.NAND.0': 'NAND = 0 seulement quand toutes les entrées valent 1 (AND inversé)',
+    'rule.NAND.1': 'NAND = 1 quand au moins une entrée vaut 0 (AND inversé)',
+    'rule.NAND.?': 'NAND = 0 seulement quand toutes les entrées valent 1 (AND inversé)',
+    'rule.NOR.1': 'NOR = 1 seulement quand toutes les entrées valent 0 (OR inversé)',
+    'rule.NOR.0': 'NOR = 0 quand au moins une entrée vaut 1 (OR inversé)',
+    'rule.NOR.?': 'NOR = 1 seulement quand toutes les entrées valent 0 (OR inversé)',
+    'rule.XNOR.1': 'XNOR = 1 quand les entrées sont identiques',
+    'rule.XNOR.0': 'XNOR = 1 quand les entrées sont identiques (entrées différentes)',
+    'rule.XNOR.?': 'XNOR = 1 quand les entrées sont identiques',
+    'rule.BUF': 'Le tampon copie l’entrée sans modification ({in0} → {out})',
+    'rule.CONST': 'Constante maintient un niveau logique fixe à {out}',
+    'rule.INPUT': 'Entrée commandée par l’interrupteur (valeur {out})',
+    'rule.OUTPUT': 'La borne de sortie reçoit le signal final ({out})',
   },
   'de': {
     'gate.input': 'Eingang',
@@ -123,6 +215,29 @@ const STRINGS = {
     'explain.BUF': '{formula} — kopiert das Eingangssignal unverändert',
     'explain.CONST': 'CONST = {out} — konstanter Logikpegel {out}',
     'explain.OUTPUT': 'Ausgang {net} = {out} — Anschluss erhält Signal ({out})',
+    'rule.AND.1': 'AND = 1 nur wenn alle Eingänge 1 sind',
+    'rule.AND.0': 'AND = 1 nur wenn alle Eingänge 1 sind (ein Eingang ist 0)',
+    'rule.AND.?': 'AND = 1 nur wenn alle Eingänge 1 sind',
+    'rule.OR.1': 'OR = 1 wenn mindestens ein Eingang 1 ist',
+    'rule.OR.0': 'OR = 1 wenn mindestens ein Eingang 1 ist (alle sind 0)',
+    'rule.OR.?': 'OR = 1 wenn mindestens ein Eingang 1 ist',
+    'rule.NOT': 'NOT invertiert den Eingang ({in0} → {out})',
+    'rule.XOR.1': 'XOR = 1 wenn die Eingänge unterschiedlich sind',
+    'rule.XOR.0': 'XOR = 1 wenn die Eingänge unterschiedlich sind (sind gleich)',
+    'rule.XOR.?': 'XOR = 1 wenn die Eingänge unterschiedlich sind',
+    'rule.NAND.0': 'NAND = 0 nur wenn alle Eingänge 1 sind (invertiertes AND)',
+    'rule.NAND.1': 'NAND = 1 wenn mindestens ein Eingang 0 ist (invertiertes AND)',
+    'rule.NAND.?': 'NAND = 0 nur wenn alle Eingänge 1 sind (invertiertes AND)',
+    'rule.NOR.1': 'NOR = 1 nur wenn alle Eingänge 0 sind (invertiertes OR)',
+    'rule.NOR.0': 'NOR = 0 wenn mindestens ein Eingang 1 ist (invertiertes OR)',
+    'rule.NOR.?': 'NOR = 1 nur wenn alle Eingänge 0 sind (invertiertes OR)',
+    'rule.XNOR.1': 'XNOR = 1 wenn die Eingänge gleich sind',
+    'rule.XNOR.0': 'XNOR = 1 wenn die Eingänge gleich sind (sind unterschiedlich)',
+    'rule.XNOR.?': 'XNOR = 1 wenn die Eingänge gleich sind',
+    'rule.BUF': 'Puffer kopiert den Eingang unverändert ({in0} → {out})',
+    'rule.CONST': 'Konstante hält festen Logikpegel {out}',
+    'rule.INPUT': 'Eingang über Schalter gesteuert (Wert {out})',
+    'rule.OUTPUT': 'Ausgangsanschluss empfängt Endsignal ({out})',
   },
   'zh-CN': {
     'gate.input': '输入',
@@ -148,6 +263,29 @@ const STRINGS = {
     'explain.BUF': '{formula} — 缓冲器直接传递输入信号',
     'explain.CONST': 'CONST = {out} — 恒定逻辑电平 {out}',
     'explain.OUTPUT': '输出 {net} = {out} — 终端接收信号 ({out})',
+    'rule.AND.1': 'AND = 1 仅当所有输入均为 1',
+    'rule.AND.0': 'AND = 1 仅当所有输入均为 1（存在 0 输入）',
+    'rule.AND.?': 'AND = 1 仅当所有输入均为 1',
+    'rule.OR.1': 'OR = 1 当至少有一个输入为 1',
+    'rule.OR.0': 'OR = 1 当至少有一个输入为 1（所有输入为 0）',
+    'rule.OR.?': 'OR = 1 当至少有一个输入为 1',
+    'rule.NOT': 'NOT 将输入反相 ({in0} → {out})',
+    'rule.XOR.1': 'XOR = 1 当两个输入不同时',
+    'rule.XOR.0': 'XOR = 1 当两个输入不同时（当前输入相同）',
+    'rule.XOR.?': 'XOR = 1 当两个输入不同时',
+    'rule.NAND.0': 'NAND = 0 仅当所有输入均为 1（AND 反相）',
+    'rule.NAND.1': 'NAND = 1 当至少有一个输入为 0（AND 反相）',
+    'rule.NAND.?': 'NAND = 0 仅当所有输入均为 1（AND 反相）',
+    'rule.NOR.1': 'NOR = 1 仅当所有输入均为 0（OR 反相）',
+    'rule.NOR.0': 'NOR = 0 当至少有一个输入为 1（OR 反相）',
+    'rule.NOR.?': 'NOR = 1 仅当所有输入均为 0（OR 反相）',
+    'rule.XNOR.1': 'XNOR = 1 当两个输入相同时',
+    'rule.XNOR.0': 'XNOR = 1 当两个输入相同时（当前输入不同）',
+    'rule.XNOR.?': 'XNOR = 1 当两个输入相同时',
+    'rule.BUF': '缓冲器原样复制输入信号 ({in0} → {out})',
+    'rule.CONST': '常量保持固定逻辑电平 {out}',
+    'rule.INPUT': '由开关控制的输入信号（当前值 {out}）',
+    'rule.OUTPUT': '输出端接收最终信号 ({out})',
   },
   'ja': {
     'gate.input': '入力',
@@ -173,6 +311,29 @@ const STRINGS = {
     'explain.BUF': '{formula} — 入力信号をそのまま伝達',
     'explain.CONST': 'CONST = {out} — 定数論理値 {out}',
     'explain.OUTPUT': '出力 {net} = {out} — 出力端子が信号 ({out}) を受信',
+    'rule.AND.1': 'AND = 1 はすべての入力が 1 のときのみ',
+    'rule.AND.0': 'AND = 1 はすべての入力が 1 のときのみ（0 の入力あり）',
+    'rule.AND.?': 'AND = 1 はすべての入力が 1 のときのみ',
+    'rule.OR.1': 'OR = 1 は少なくとも 1 つの入力が 1 のとき',
+    'rule.OR.0': 'OR = 1 は少なくとも 1 つの入力が 1 のとき（すべて 0）',
+    'rule.OR.?': 'OR = 1 は少なくとも 1 つの入力が 1 のとき',
+    'rule.NOT': 'NOT は入力を反転 ({in0} → {out})',
+    'rule.XOR.1': 'XOR = 1 は入力が互いに異なるとき',
+    'rule.XOR.0': 'XOR = 1 は入力が互いに異なるとき（入力が同じ）',
+    'rule.XOR.?': 'XOR = 1 は入力が互いに異なるとき',
+    'rule.NAND.0': 'NAND = 0 はすべての入力が 1 のときのみ（AND の反転）',
+    'rule.NAND.1': 'NAND = 1 は少なくとも 1 つの入力が 0 のとき（AND の反転）',
+    'rule.NAND.?': 'NAND = 0 はすべての入力が 1 のときのみ（AND の反転）',
+    'rule.NOR.1': 'NOR = 1 はすべての入力が 0 のときのみ（OR の反転）',
+    'rule.NOR.0': 'NOR = 0 は少なくとも 1 つの入力が 1 のとき（OR の反転）',
+    'rule.NOR.?': 'NOR = 1 はすべての入力が 0 のときのみ（OR の反転）',
+    'rule.XNOR.1': 'XNOR = 1 は入力が互いに等しいとき',
+    'rule.XNOR.0': 'XNOR = 1 は入力が互いに等しいとき（入力が異なる）',
+    'rule.XNOR.?': 'XNOR = 1 は入力が互いに等しいとき',
+    'rule.BUF': 'バッファは入力をそのまま伝達 ({in0} → {out})',
+    'rule.CONST': '定数は固定論理値 {out} を保持',
+    'rule.INPUT': 'スイッチで制御される入力（現在値 {out}）',
+    'rule.OUTPUT': '出力端子が最終信号 ({out}) を受信',
   },
 };
 
@@ -224,7 +385,7 @@ export function svgEl(tag, attrs = {}) {
 }
 
 export const GATE_METRICS = {
-  input:  { width: 108, height: 42, outX: 60, inX: -54 },
+  input:  { width: 116, height: 42, outX: 64, inX: -58 },
   output: { width: 100, height: 42, outX: 50, inX: -56 },
   const:  { width: 76,  height: 38, outX: 46, inX: -38 },
   gate:   { width: 76,  height: 52, outX: 46, inX: -46, portSpread: 13 },
@@ -307,6 +468,30 @@ export function explainStep(step) {
   return t(key, { formula, out });
 }
 
+export function explainNodeRule(node, inputValues = [], outputValue = '?') {
+  if (!node) return '';
+  const out = outputValue === '?' || outputValue == null ? '?' : String(outputValue);
+  const in0 = inputValues[0] === '?' || inputValues[0] == null ? '?' : String(inputValues[0]);
+  if (node.type === 'input') {
+    return t('rule.INPUT', { out });
+  }
+  if (node.type === 'const') {
+    return t('rule.CONST', { out: String(node.value ?? out) });
+  }
+  if (node.type === 'output') {
+    return t('rule.OUTPUT', { out });
+  }
+  if (node.type === 'buffer') {
+    return t('rule.BUF', { in0, out });
+  }
+  const op = node.op || 'AND';
+  if (op === 'NOT') {
+    return t('rule.NOT', { in0, out });
+  }
+  const key = `rule.${op}.${out}`;
+  return t(key, { in0, out });
+}
+
 export function drawNodeShape(group, node, state = {}) {
   const val = state.value ?? '?';
   const isHigh = val === 1;
@@ -331,7 +516,7 @@ function drawInputSwitch(group, node, val, isHigh) {
   const outX = GATE_METRICS.input.outX;
   // Output pin stub
   group.append(svgEl('line', {
-    x1: 50, y1: 0, x2: outX, y2: 0,
+    x1: 54, y1: 0, x2: outX, y2: 0,
     class: `pin-stub ${isHigh ? 'val-1' : 'val-0'}`,
   }));
   group.append(svgEl('circle', {
@@ -341,35 +526,35 @@ function drawInputSwitch(group, node, val, isHigh) {
 
   // Switch body housing
   group.append(svgEl('rect', {
-    x: -54, y: -21, width: 104, height: 42, rx: 8,
+    x: -58, y: -21, width: 112, height: 42, rx: 8,
     class: `terminal-body input-terminal ${isHigh ? 'is-high' : 'is-low'}`,
   }));
 
   // Signal name on left
   const labelText = node.bit || node.label || node.id;
   const label = svgEl('text', {
-    x: -44, y: 4.5,
-    class: 'terminal-label',
+    x: -49, y: 4.5,
+    class: `terminal-label ${labelText.length >= 6 ? 'is-long' : ''}`,
     'text-anchor': 'start',
   });
-  label.textContent = labelText.length > 7 ? labelText : labelText;
+  label.textContent = labelText;
   group.append(label);
 
   // Switch track (pill)
   group.append(svgEl('rect', {
-    x: 0, y: -9, width: 28, height: 18, rx: 9,
+    x: 6, y: -8.5, width: 26, height: 17, rx: 8.5,
     class: `switch-track ${isHigh ? 'is-on' : 'is-off'}`,
   }));
 
   // Switch thumb circle
   group.append(svgEl('circle', {
-    cx: isHigh ? 19 : 9, cy: 0, r: 6,
+    cx: isHigh ? 23.5 : 14.5, cy: 0, r: 5.5,
     class: `switch-thumb ${isHigh ? 'is-on' : 'is-off'}`,
   }));
 
   // Tabular value 0/1 on right
   const valText = svgEl('text', {
-    x: 39, y: 4.5,
+    x: 43, y: 4.5,
     class: `terminal-value ${isHigh ? 'val-1' : 'val-0'}`,
     'text-anchor': 'middle',
   });

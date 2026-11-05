@@ -124,6 +124,14 @@
   color: var(--muted);
 }
 
+.crit-pill-short {
+  display: none;
+}
+
+.circuit-tool-btn .tool-icon {
+  flex: none;
+}
+
 /* --------------------------------------------------------------------------
    2. SVG Stage & Vector Diagram
    -------------------------------------------------------------------------- */
@@ -411,6 +419,10 @@
   pointer-events: none;
 }
 
+.terminal-label.is-long {
+  font-size: 11px;
+}
+
 .terminal-value {
   fill: var(--muted);
   font: 700 13px var(--mono);
@@ -496,7 +508,7 @@
   position: absolute;
   right: 12px;
   bottom: 12px;
-  width: min(290px, calc(100% - 24px));
+  width: min(320px, calc(100% - 24px));
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 6px;
@@ -592,6 +604,12 @@
   font-variant-numeric: tabular-nums;
   color: var(--text);
   text-align: right;
+}
+
+.inspector-grid dd.inspector-why-dd {
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+  font-size: 11.5px;
+  line-height: 1.35;
 }
 
 .inspector-code-btn {
@@ -727,6 +745,15 @@
   gap: 8px;
 }
 
+.player-scrubber-toggle {
+  display: none;
+}
+
+.player-scrubber-toggle.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
 .player-counter {
   font: 600 12px var(--mono);
   font-variant-numeric: tabular-nums;
@@ -806,10 +833,19 @@
 
 .tt-btn,
 .tt-filter-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   min-height: 32px;
   padding: 4px 10px;
   font-size: 12px;
   border-radius: 4px;
+}
+
+.tt-wire-short,
+.tt-md-short {
+  display: none;
 }
 
 .tt-filter-select {
@@ -986,25 +1022,316 @@
   }
 }
 
-@media (max-width: 819px) {
+@media (max-width: 900px) {
+  #panel-circuit.has-enhanced-circuit {
+    min-height: 0;
+    height: 100%;
+  }
+
   .circuit-workspace {
-    min-height: 420px;
+    min-height: 330px;
+    height: 100%;
+    max-width: 100%;
   }
+
+  /* Icon-only toolbar in one single row */
+  .circuit-toolbar {
+    flex-wrap: nowrap;
+    padding: 4px 8px;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .circuit-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .circuit-toolbar-group {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .circuit-tool-btn {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px 7px;
+  }
+
+  .circuit-tool-btn .btn-label {
+    display: none;
+  }
+
+  .circuit-crit-pill.is-muted {
+    display: none;
+  }
+
+  .circuit-crit-pill {
+    height: 26px;
+    padding: 0 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .circuit-crit-pill .crit-pill-full {
+    display: none;
+  }
+
+  .circuit-crit-pill .crit-pill-short {
+    display: inline;
+  }
+
+  /* Stage & SVG sizing */
   .circuit-stage {
-    min-height: 290px;
+    min-height: 210px;
+    flex: 1;
   }
+
   .circuit-svg {
-    min-height: 290px;
+    min-height: 210px;
+    height: 100%;
   }
-  .circuit-tool-btn,
-  .player-btn,
+
+  /* Hint hidden until selection; Inspector as a bottom sheet */
+  .circuit-inspector.is-idle {
+    display: none !important;
+  }
+
+  .circuit-inspector.has-target {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 10px 10px 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-top: 1px solid var(--accent);
+    background: var(--surface);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.48);
+    z-index: 4;
+  }
+
+  .circuit-inspector.has-target::before {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 3px;
+    margin: 5px auto 0;
+    border-radius: 2px;
+    background: var(--border);
+  }
+
+  .inspector-header {
+    padding: 3px 10px 5px;
+  }
+
+  .inspector-body {
+    padding: 5px 10px 8px;
+    gap: 4px;
+    max-height: 225px;
+    overflow-y: auto;
+  }
+
+  .inspector-formula {
+    padding: 2px 7px;
+    font-size: 11px;
+  }
+
+  .inspector-grid {
+    gap: 1px 8px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .inspector-grid dd.inspector-why-dd {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .inspector-code-btn {
+    min-height: 26px;
+    padding: 2px 8px;
+    font-size: 11px;
+  }
+
+  /* Compacted player with collapsible scrubber */
+  .circuit-player {
+    padding: 5px 8px;
+    gap: 3px;
+  }
+
+  .circuit-player-bar {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .circuit-player.is-scrubber-open .circuit-player-bar {
+    flex-wrap: wrap;
+  }
+
+  .player-transport {
+    gap: 3px;
+  }
+
+  .player-btn {
+    min-height: 30px;
+    min-width: 30px;
+    padding: 3px 6px;
+  }
+
+  .player-btn.show-result-btn {
+    padding: 3px 6px;
+  }
+
+  .player-btn.show-result-btn .player-btn-label {
+    display: none;
+  }
+
+  .player-scrubber-toggle {
+    display: inline-flex;
+  }
+
+  .player-scrubber-wrap {
+    display: none;
+    order: 3;
+    flex-basis: 100%;
+    padding: 4px 4px 2px;
+  }
+
+  .circuit-player.is-scrubber-open .player-scrubber-wrap {
+    display: flex;
+  }
+
+  .player-meta {
+    gap: 4px;
+  }
+
+  .player-counter {
+    font-size: 11.5px;
+    min-width: 34px;
+  }
+
+  .player-speed select {
+    min-height: 28px;
+    padding: 2px 5px;
+    font-size: 11px;
+  }
+
+  .circuit-player-footer {
+    gap: 2px 8px;
+    padding-top: 0;
+  }
+
+  .player-explanation {
+    font-size: 11px;
+    gap: 6px;
+    line-height: 1.3;
+  }
+
+  .step-inline-badge {
+    padding: 0 5px;
+    font-size: 10px;
+  }
+
+  .player-didactic-note {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  /* Compact Truth Table on 390x844 and 820x1180 */
+  .tt-container {
+    gap: 6px;
+  }
+
+  .tt-toolbar {
+    flex-wrap: nowrap;
+    gap: 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 1px;
+  }
+
+  .tt-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-toolbar-group {
+    flex-wrap: nowrap;
+    gap: 3px;
+  }
+
   .tt-btn,
   .tt-filter-select {
-    min-height: 38px;
+    min-height: 28px;
+    min-width: 26px;
+    padding: 2px 5px;
+    font-size: 11px;
+    gap: 3px;
+    white-space: nowrap;
   }
-  .circuit-inspector {
-    right: 8px;
-    bottom: 8px;
-    width: calc(100% - 16px);
+
+  .tt-filter-select {
+    padding: 2px 3px;
+    font-size: 10.5px;
+  }
+
+  .tt-export-btn .tt-icon {
+    display: none;
+  }
+
+  .tt-btn:not(.primary) .tt-btn-label {
+    display: none;
+  }
+
+  .tt-wire-full,
+  .tt-md-full {
+    display: none;
+  }
+
+  .tt-wire-short,
+  .tt-md-short {
+    display: inline;
+  }
+
+  .tt-checkbox {
+    font-size: 11px;
+    gap: 3px;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  .tt-checkbox input {
+    margin: 0;
+    width: 13px;
+    height: 13px;
+  }
+
+  .tt-summary-bar {
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tt-summary-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-viewport {
+    max-height: calc(100dvh - 320px);
+    min-height: 180px;
+  }
+
+  .tt-table {
+    font-size: 11.5px;
+  }
+
+  .tt-table th,
+  .tt-table td {
+    padding: 4px 6px;
   }
 }

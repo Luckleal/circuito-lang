@@ -8,6 +8,7 @@
   <title>circuito-lang</title>
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/css/circuit.css">
+  <link rel="stylesheet" href="/css/analysis.css">
   <script type="module" src="/js/main.js"></script>
 </head>
 <body>
@@ -35,6 +36,7 @@
       <div id="status" class="sr-only" role="status" aria-live="polite"></div>
       <div class="tabs-scroll"><div id="tabs" class="tabs" role="tablist" data-i18n-aria="app.tabs">
         <button role="tab" id="tab-diagnostics" aria-controls="panel-diagnostics" aria-selected="true" tabindex="0" data-tab="diagnostics" data-i18n="tab.diagnostics"></button>
+        <button role="tab" id="tab-analysis" aria-controls="panel-analysis" aria-selected="false" tabindex="-1" data-tab="analysis" data-i18n="tab.analysis"></button>
         <button role="tab" id="tab-tokens" aria-controls="panel-tokens" aria-selected="false" tabindex="-1" data-tab="tokens" data-i18n="tab.tokens"></button>
         <button role="tab" id="tab-cst" aria-controls="panel-cst" aria-selected="false" tabindex="-1" data-tab="cst" data-i18n="tab.cst"></button>
         <button role="tab" id="tab-ast" aria-controls="panel-ast" aria-selected="false" tabindex="-1" data-tab="ast" data-i18n="tab.ast"></button>
@@ -44,6 +46,7 @@
       </div></div>
       <div id="result-content" class="result-content">
         <section role="tabpanel" id="panel-diagnostics" aria-labelledby="tab-diagnostics"></section>
+        <section role="tabpanel" id="panel-analysis" aria-labelledby="tab-analysis" hidden></section>
         <section role="tabpanel" id="panel-tokens" aria-labelledby="tab-tokens" hidden></section>
         <section role="tabpanel" id="panel-cst" aria-labelledby="tab-cst" hidden></section>
         <section role="tabpanel" id="panel-ast" aria-labelledby="tab-ast" hidden></section>

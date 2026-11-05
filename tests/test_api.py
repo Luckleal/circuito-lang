@@ -268,3 +268,8 @@ def test_why_explains_every_output_with_values():
         return [node] if not node.get("children") else [x for c in node["children"] for x in leaves(c)]
     assert {l["label"] for l in leaves(carry)} <= {"A", "B", "Cin"}
     assert set(sim["why"]) == {"sum", "carry"}
+
+
+def test_name_is_known_as_soon_as_the_ast_exists():
+    r = api.analyze_program('circuit "named";\ninput A;\noutput S;\nS = B;\n')
+    assert r["stages"]["semantic"] == "error" and r["name"] == "named"

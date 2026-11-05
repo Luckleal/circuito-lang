@@ -6,7 +6,7 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-573_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-577_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Etapa](https://img.shields.io/badge/etapa-lexer_+_parser-2EA44F?style=flat-square)
 ![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 

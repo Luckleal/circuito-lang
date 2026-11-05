@@ -281,6 +281,7 @@ def analyze_program(text):
 
     program = build_ast(parsed.tree)
     result["stages"]["syntactic"] = "ok"
+    result["name"] = program.name
     result["cst"] = build_cst(parsed.tree, parsed.parser)
     result["ast"] = ast_to_dict(program, source)
     result["summary"].update({"cst_nodes": _count_nodes(result["cst"]), "ast_nodes": _count_nodes(result["ast"]),

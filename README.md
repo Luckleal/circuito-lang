@@ -6,7 +6,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-573_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-577_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Stage](https://img.shields.io/badge/stage-lexer_+_parser-2EA44F?style=flat-square)
 ![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
@@ -361,7 +361,7 @@ In VS Code, press F5 and pick **Circuit: web interface**. The other launch confi
 python -m pytest
 ```
 
-573 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
+577 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
 
 | File | What it covers |
 |---|---|

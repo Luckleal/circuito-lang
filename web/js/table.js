@@ -303,17 +303,21 @@ export function createTable(host, getContext, applyInputs) {
     genBtn.className = data && signature === expectedSig ? 'tt-btn' : 'tt-btn primary';
     genBtn.disabled = busy;
     genBtn.setAttribute('data-generate', '');
-    genBtn.textContent = busy
+    const genText = busy
       ? t('table.generating')
       : data && signature === expectedSig
         ? t('table.refresh')
         : t('table.generate');
+    genBtn.title = genText;
+    genBtn.setAttribute('aria-label', genText);
+    genBtn.innerHTML = `<svg class="tt-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.5 8a5.5 5.5 0 1 1-1.3-3.5M13.5 2.5v2.5H11"/></svg><span class="tt-btn-label">${genText}</span>`;
     genBtn.onclick = () => generate({ interactive: true });
     leftGroup.append(genBtn);
 
     if ((ctx.analysis.wires || []).length > 0) {
       const wireLabel = document.createElement('label');
       wireLabel.className = 'tt-checkbox';
+      wireLabel.title = t('table.show_wires');
       const wireInput = document.createElement('input');
       wireInput.type = 'checkbox';
       wireInput.checked = wires;
@@ -324,9 +328,13 @@ export function createTable(host, getContext, applyInputs) {
         signature = '';
         render();
       };
-      const wireText = document.createElement('span');
-      wireText.textContent = t('table.show_wires');
-      wireLabel.append(wireInput, wireText);
+      const wireFull = document.createElement('span');
+      wireFull.className = 'tt-wire-full';
+      wireFull.textContent = t('table.show_wires');
+      const wireShort = document.createElement('span');
+      wireShort.className = 'tt-wire-short';
+      wireShort.textContent = t('table.group_wires');
+      wireLabel.append(wireInput, wireFull, wireShort);
       leftGroup.append(wireLabel);
     }
 
@@ -360,32 +368,43 @@ export function createTable(host, getContext, applyInputs) {
     rightGroup.className = 'tt-toolbar-group';
 
     if (data && signature === expectedSig) {
+      const copyIcon = `<svg class="tt-icon" viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5.5" y="5.5" width="8" height="8" rx="1.2"/><path d="M3.5 10.5H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h6.5a1 1 0 0 1 1 1v.5"/></svg>`;
       const btnCopy = document.createElement('button');
       btnCopy.type = 'button';
       btnCopy.className = 'tt-btn';
       btnCopy.setAttribute('data-copy', '');
-      btnCopy.textContent = t('table.copy');
+      btnCopy.title = t('table.copy');
+      btnCopy.setAttribute('aria-label', t('table.copy'));
+      btnCopy.innerHTML = `${copyIcon}<span class="tt-btn-label">${t('table.copy')}</span>`;
       btnCopy.onclick = async () => {
+        const lbl = btnCopy.querySelector('.tt-btn-label');
         try {
           await navigator.clipboard.writeText(data.formats.md);
-          btnCopy.textContent = t('table.copied');
+          if (lbl) lbl.textContent = t('table.copied');
+          btnCopy.title = t('table.copied');
         } catch {
-          btnCopy.textContent = t('table.copy_err');
+          if (lbl) lbl.textContent = t('table.copy_err');
+          btnCopy.title = t('table.copy_err');
         }
       };
 
+      const dlIcon = `<svg class="tt-icon" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2.5v7.5M5 7.5L8 10.5 11 7.5M3 13h10"/></svg>`;
       const btnCsv = document.createElement('button');
       btnCsv.type = 'button';
-      btnCsv.className = 'tt-btn';
+      btnCsv.className = 'tt-btn tt-export-btn';
       btnCsv.setAttribute('data-csv', '');
-      btnCsv.textContent = t('table.csv');
+      btnCsv.title = t('table.csv');
+      btnCsv.setAttribute('aria-label', t('table.csv'));
+      btnCsv.innerHTML = `${dlIcon}<span>${t('table.csv')}</span>`;
       btnCsv.onclick = () => downloadBlob('tabela-verdade.csv', data.formats.csv, 'text/csv;charset=utf-8');
 
       const btnMd = document.createElement('button');
       btnMd.type = 'button';
-      btnMd.className = 'tt-btn';
+      btnMd.className = 'tt-btn tt-export-btn';
       btnMd.setAttribute('data-md', '');
-      btnMd.textContent = t('table.md');
+      btnMd.title = t('table.md');
+      btnMd.setAttribute('aria-label', t('table.md'));
+      btnMd.innerHTML = `${dlIcon}<span class="tt-md-full">${t('table.md')}</span><span class="tt-md-short">MD</span>`;
       btnMd.onclick = () => downloadBlob('tabela-verdade.md', data.formats.md, 'text/markdown;charset=utf-8');
 
       rightGroup.append(btnCopy, btnCsv, btnMd);

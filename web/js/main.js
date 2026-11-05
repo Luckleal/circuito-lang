@@ -3,12 +3,13 @@ import {createEditor} from './editor.js';
 import {renderTree} from './tree.js';
 import {renderCircuit} from './circuit.js';
 import {createTable} from './table.js';
+import {renderAnalysis} from './analysis.js';
 import {t, detectLanguage, setLanguage, getLanguage, translateStatic} from './i18n.js';
 
 const $ = selector => document.querySelector(selector);
 const code = $('#code');
 const editor = createEditor(code, $('#highlight'), $('#lines'), $('#cursor'), $('#current-line'));
-const ids = ['diagnostics','tokens','cst','ast','circuit','table','delays'];
+const ids = ['diagnostics','analysis','tokens','cst','ast','circuit','table','delays'];
 const panels = Object.fromEntries(ids.map(id => [id, $(`#panel-${id}`)]));
 const tabs = [...document.querySelectorAll('[role="tab"]')];
 let examples = [], analysis = null, simulation = null, analyzedCode = '';
@@ -91,6 +92,7 @@ document.addEventListener('languagechange', () => {
   updateSummary();
   if (!analysis) $('#analysis-summary').textContent = t('app.awaiting');
   populateExamples();
+  table.render();
   renderActive();
 });
 for (const button of document.querySelectorAll('.mobile-tabs button')) button.addEventListener('click', () => setView(button.dataset.view));
@@ -166,6 +168,7 @@ function renderActive() {
   const host = panels[activeTab]; intro(host, activeTab);
   if (!analysis) { empty(host, 'result.empty'); return; }
   if (activeTab === 'diagnostics') return renderDiagnostics(host);
+  if (activeTab === 'analysis') return renderAnalysis(host, {analysis, simulation, code:analyzedCode, selectSource, stale, tableSummary:panels.table.querySelector('.tt-summary-bar')?.textContent});
   if (activeTab === 'tokens') return renderTokens(host);
   if (activeTab === 'cst' || activeTab === 'ast') {
     const tree = analysis[activeTab];

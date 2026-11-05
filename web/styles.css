@@ -13,7 +13,7 @@
 :root[data-theme=light] .tok-number{color:#825000}
 :root[data-theme=light] .tok-comment{color:#56565e}
 :root[data-theme=light] .tok-symbol{color:#29292d}
-body{display:flex;flex-direction:column;min-height:100dvh}
+body{display:flex;flex-direction:column;height:100dvh;min-height:0;overflow:hidden}
 .app-header{flex:none}
 .brand{font-family:var(--mono);font-size:15px;letter-spacing:-.045em}
 .brand-mark{width:24px;height:24px;flex:none}

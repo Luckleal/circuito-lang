@@ -3,3 +3,4 @@ generated/
 *.interp
 __pycache__/
 .pytest_cache/
+web/.npm-cache/

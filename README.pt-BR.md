@@ -346,7 +346,7 @@ python src/interactive.py "NOT A OR B AND C"
 
 ## Online
 
-**Teste no navegador: <https://luckleal.github.io/circuito-lang/>** (publicado a partir do `main` pelo workflow `Pages`; precisa do GitHub Pages ativado com a fonte em GitHub Actions).
+A interface é um site estático que pode ficar em qualquer hospedagem (não precisa de Python no servidor).
 
 O site é estático: o compilador de verdade (o mesmo código Python e o mesmo parser ANTLR) roda no navegador por meio do [Pyodide](https://pyodide.org), sem servidor. A primeira visita baixa o ambiente uma vez.
 

@@ -1,6 +1,6 @@
 """Entry point for running the web API without an HTTP server (browser, Pyodide).
 
-The static site (GitHub Pages) loads the compiler into the browser with Pyodide and calls
+The static site (any static host) loads the compiler into the browser with Pyodide and calls
 `handle(path, body_json)`, which dispatches to exactly the same functions the local
 server (server.py) uses. No language rule lives here.
 """

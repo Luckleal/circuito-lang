@@ -343,7 +343,7 @@ python src/interactive.py "NOT A OR B AND C"
 
 ## Online
 
-**Try it in the browser: <https://luckleal.github.io/circuito-lang/>** (published from `main` by the `Pages` workflow; it needs GitHub Pages enabled with the source set to GitHub Actions).
+The interface is a static site that can be hosted anywhere (it does not need Python on the server).
 
 The site is static: the real compiler (the same Python code and ANTLR parser) runs in the browser through [Pyodide](https://pyodide.org), so no server is needed. The first visit downloads the runtime once.
 

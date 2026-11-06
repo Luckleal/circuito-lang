@@ -27,7 +27,7 @@ def test_site_contains_the_interface_and_the_bundle(site):
     assert not any("__pycache__" in n for n in names)
 
 
-def test_index_uses_relative_urls_for_project_pages(site):
+def test_index_uses_relative_urls_for_subfolder_hosting(site):
     html = (site / "index.html").read_text(encoding="utf-8")
     assert 'href="/' not in html and 'src="/' not in html
 

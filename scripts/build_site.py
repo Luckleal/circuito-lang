@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the static site (for GitHub Pages or any static host) into site/.
+"""Builds the static site (for any static host) into site/.
 
 Usage: python scripts/build_site.py [output_dir] [--zip]   (run `bash generate.sh` first)
 

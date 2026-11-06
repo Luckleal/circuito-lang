@@ -328,3 +328,39 @@ def test_http_quick_expression(base_url):
     status, body = post(base_url, "/api/expression", {"expression": "A XOR B"})
     assert status == 200 and body["ok"] and "S = A XOR B;" in body["code"]
     assert post(base_url, "/api/expression", {"expression": 5})[0] == 400
+
+
+# ---------- comparing two expressions ----------
+
+def test_equivalent_expressions():
+    r = api.compare_expressions("NOT (A AND B)", "NOT A OR NOT B")
+    assert r["ok"] and r["equivalent"] and r["differences"] == [] and r["rows"] == 4
+
+
+def test_different_expressions_list_the_rows_that_differ():
+    r = api.compare_expressions("A AND B", "A OR B")
+    assert r["ok"] and not r["equivalent"] and r["different_rows"] == 2
+    assert r["differences"][0] == {"inputs": [0, 1], "first": 0, "second": 1}
+
+
+def test_comparison_uses_the_union_of_inputs():
+    r = api.compare_expressions("A", "A OR (B AND 0)")
+    assert r["inputs"] == ["A", "B"] and r["equivalent"]
+    assert not api.compare_expressions("A", "B")["equivalent"]
+
+
+def test_comparison_of_buses_and_precedence():
+    assert api.compare_expressions("d[0] OR d[1]", "d[1] OR d[0]")["equivalent"]
+    assert api.compare_expressions("NOT A OR B AND C", "(NOT A) OR (B AND C)")["equivalent"]
+    assert not api.compare_expressions("NOT A OR B AND C", "NOT (A OR B) AND C")["equivalent"]
+
+
+def test_comparison_reports_which_side_is_invalid():
+    r = api.compare_expressions("A OR", "A OR B")
+    assert not r["ok"] and r["diagnostics"]["first"] and not r["diagnostics"]["second"]
+
+
+def test_http_compare(base_url):
+    status, body = post(base_url, "/api/compare", {"first": "A XOR B", "second": "(A OR B) AND NOT (A AND B)"})
+    assert status == 200 and body["equivalent"]
+    assert post(base_url, "/api/compare", {"first": "A"})[0] == 400

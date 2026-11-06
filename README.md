@@ -6,7 +6,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-584_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-596_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Stage](https://img.shields.io/badge/stage-lexer_+_parser-2EA44F?style=flat-square)
 ![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
@@ -16,6 +16,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 [Precedence](#operators-and-precedence) ·
 [Errors](#error-reporting) ·
 [Interactive mode](#interactive-mode) ·
+[Online](#online) ·
 [Web interface](#web-interface) ·
 [Tests](#tests) ·
 [Status](#project-status) ·
@@ -340,6 +341,19 @@ Commands: `:help` and `:quit` (also `:q`, Ctrl+D or Ctrl+C). To analyze one expr
 python src/interactive.py "NOT A OR B AND C"
 ```
 
+## Online
+
+**Try it in the browser: <https://luckleal.github.io/circuito-lang/>** (published from `main` by the `Pages` workflow; it needs GitHub Pages enabled with the source set to GitHub Actions).
+
+The site is static: the real compiler (the same Python code and ANTLR parser) runs in the browser through [Pyodide](https://pyodide.org), so no server is needed. The first visit downloads the runtime once.
+
+```bash
+python scripts/build_site.py site          # builds the static site into site/
+python scripts/build_site.py site --zip    # also writes site.zip, ready to upload to any static host
+```
+
+Upload the contents of `site/` (or unzip `site.zip`) to the public folder of any static host. Relative paths make it work in a subfolder too. Open the **Copiar link** button's URL to share an expression or program: the page loads it and analyzes it.
+
 ## Web interface
 
 A local web interface runs the real compiler: write or import a `.circ` program, analyze it, inspect the tokens, the concrete syntax tree, the AST, the logic circuit drawn with gate symbols, the step-by-step evaluation and the truth table. It works on desktop and phone and follows the browser language (Portuguese, English, Spanish, French, German, Chinese, Japanese), which can be changed in the header.
@@ -363,7 +377,7 @@ In VS Code, press F5 and pick **Circuit: web interface**. The other launch confi
 python -m pytest
 ```
 
-584 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
+596 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
 
 | File | What it covers |
 |---|---|
@@ -411,7 +425,8 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      lexer and parser rules
 ├── generate.sh             regenerates the ANTLR code into generated/
-├── web/                    local web interface (HTML, CSS, JS modules)
+├── web/                    web interface (HTML, CSS, JS modules)
+├── scripts/                build_site.py: static site and zip
 ├── vscode/                 minimal VS Code extension for .circ
 ├── src/                    api.py · server.py · lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py · simulator.py
 ├── examples/               valid and invalid programs

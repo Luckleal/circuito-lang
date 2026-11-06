@@ -5,6 +5,8 @@ import {renderCircuit} from './circuit.js';
 import {createTable} from './table.js';
 import {renderAnalysis} from './analysis.js';
 import {createQuick} from './quick.js';
+import {linkedContent, setupShare} from './share.js';
+import {setupCompilerStatus} from './status.js';
 import {t, detectLanguage, setLanguage, getLanguage, translateStatic} from './i18n.js';
 
 const $ = selector => document.querySelector(selector);
@@ -21,6 +23,16 @@ const table = createTable(panels.table, () => ({analysis, code:analyzedCode, inp
 
 function save(key, value) { try { localStorage.setItem(key, value); } catch {} }
 function load(key) { try { return localStorage.getItem(key); } catch { return null; } }
+const textSizes = [1, 1.25, 1.5];
+let textSize = Math.max(0, Math.min(2, parseInt(load('circuito.textSize'), 10) || 0));
+function applyTextSize() {
+  document.documentElement.style.setProperty('--content-scale', textSizes[textSize]);
+  $('#text-smaller').disabled = textSize === 0;
+  $('#text-larger').disabled = textSize === 2;
+  editor.position();
+}
+$('#text-smaller').addEventListener('click', () => { textSize = Math.max(0, textSize - 1); save('circuito.textSize', textSize); applyTextSize(); });
+$('#text-larger').addEventListener('click', () => { textSize = Math.min(2, textSize + 1); save('circuito.textSize', textSize); applyTextSize(); });
 function status(value) { $('#status').textContent = value; }
 function intro(host, id) {
   host.replaceChildren();
@@ -275,19 +287,26 @@ function populateExamples() {
   }
   select.value = current;
 }
-async function init() {
-  fullCode = load('circuito.code') || '';
-  code.value = fullCode; editor.paint();
+async function loadExamples(allowDefault = false) {
   try {
     examples = await api.examples(); populateExamples();
     const initial = examples.find(example => example.name === 'half_adder');
-    if (!code.value && initial) { code.value = initial.code; fullCode = initial.code; }
+    if (allowDefault && !code.value && initial && quick.getMode() === 'full') { code.value = initial.code; fullCode = initial.code; runAnalysis(); }
     $('#examples').value = examples.find(example => example.code === code.value)?.name || '';
-    $('#examples').addEventListener('change', () => { const example = examples.find(item => item.name === $('#examples').value); if (example) useCode(example.code); });
     editor.paint();
-    quick.setMode(load('circuito.mode') === 'full' ? 'full' : 'quick');
-    if (quick.getMode() === 'full') await runAnalysis();
+    if (!analysis && quick.getMode() === 'quick' && !quick.getExpression().trim()) { $('#analysis-summary').textContent = t('app.awaiting'); renderActive(); }
   } catch (error) { status(error.message); $('#analysis-summary').textContent = error.message; intro(panels.diagnostics, 'diagnostics'); const p = document.createElement('p'); p.className = 'empty'; p.textContent = error.message; panels.diagnostics.append(p); }
+}
+$('#examples').addEventListener('change', () => { const example = examples.find(item => item.name === $('#examples').value); if (example) useCode(example.code); });
+function init() {
+  const linked = linkedContent();
+  fullCode = linked?.mode === 'full' ? linked.text : load('circuito.code') || '';
+  code.value = fullCode; editor.paint();
+  if (linked?.mode === 'quick') quick.setExpression(linked.text);
+  quick.setMode(linked?.mode || (load('circuito.mode') === 'full' ? 'full' : 'quick'));
+  applyTextSize();
+  if (quick.getMode() === 'full' && code.value) runAnalysis();
+  loadExamples(!linked);
 }
 const quick = createQuick({
   onPending() {
@@ -315,3 +334,9 @@ const quick = createQuick({
   }
 });
 translateStatic(); init();
+setupShare(() => quick.getMode() === 'quick' ? {mode:'quick', text:quick.getExpression()} : {mode:'full', text:code.value});
+setupCompilerStatus(() => {
+  loadExamples();
+  if (quick.getMode() === 'quick' && quick.getExpression().trim()) quick.retry();
+  else if (quick.getMode() === 'full') runAnalysis();
+});

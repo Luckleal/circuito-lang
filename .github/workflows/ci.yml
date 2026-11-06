@@ -29,3 +29,5 @@ jobs:
           bash generate.sh
       - name: Run the test suite
         run: python -m pytest
+      - name: Build the static site
+        run: python scripts/build_site.py

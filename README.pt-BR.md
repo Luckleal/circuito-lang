@@ -6,7 +6,7 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-584_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-596_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Etapa](https://img.shields.io/badge/etapa-lexer_+_parser-2EA44F?style=flat-square)
 ![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
@@ -16,6 +16,7 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 [Precedência](#operadores-e-precedência) ·
 [Erros](#relatório-de-erros) ·
 [Modo interativo](#modo-interativo) ·
+[Online](#online) ·
 [Interface web](#interface-web) ·
 [Testes](#testes) ·
 [Status](#status-do-projeto) ·
@@ -343,6 +344,19 @@ Comandos: `:help` e `:quit` (também `:q`, Ctrl+D ou Ctrl+C). Para analisar uma 
 python src/interactive.py "NOT A OR B AND C"
 ```
 
+## Online
+
+**Teste no navegador: <https://luckleal.github.io/circuito-lang/>** (publicado a partir do `main` pelo workflow `Pages`; precisa do GitHub Pages ativado com a fonte em GitHub Actions).
+
+O site é estático: o compilador de verdade (o mesmo código Python e o mesmo parser ANTLR) roda no navegador por meio do [Pyodide](https://pyodide.org), sem servidor. A primeira visita baixa o ambiente uma vez.
+
+```bash
+python scripts/build_site.py site          # gera o site estático em site/
+python scripts/build_site.py site --zip    # também gera site.zip, pronto para subir em qualquer hospedagem estática
+```
+
+Suba o conteúdo de `site/` (ou descompacte o `site.zip`) na pasta pública de qualquer hospedagem estática. Os caminhos relativos funcionam também em subpasta. O botão **Copiar link** gera uma URL que compartilha uma expressão ou programa: a página abre, carrega e analisa.
+
 ## Interface web
 
 Uma interface web local usa o compilador de verdade: escreva ou importe um programa `.circ`, analise e veja os tokens, a árvore sintática concreta, a AST, o circuito desenhado com os símbolos das portas, a avaliação passo a passo e a tabela-verdade. Funciona no computador e no celular e segue o idioma do navegador (português, inglês, espanhol, francês, alemão, chinês, japonês), que pode ser trocado no cabeçalho.
@@ -414,7 +428,8 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      regras de lexer e de parser
 ├── generate.sh             regenera o código do ANTLR em generated/
-├── web/                    interface web local (HTML, CSS, módulos JS)
+├── web/                    interface web (HTML, CSS, módulos JS)
+├── scripts/                build_site.py: site estático e zip
 ├── vscode/                 extensão mínima do VS Code para .circ
 ├── src/                    api.py · server.py · lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py · simulator.py
 ├── examples/               programas válidos e inválidos

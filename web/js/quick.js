@@ -1,5 +1,7 @@
 import {createEditor} from './editor.js';
+import {expression as requestExpression} from './api.js';
 import {t} from './i18n.js';
+import {createCompare} from './compare.js';
 
 const $ = selector => document.querySelector(selector);
 const expression = $('#quick-expression');
@@ -8,6 +10,7 @@ const generatedEditor = createEditor(generated, $('#quick-highlight'), $('#quick
 const operators = ['NOT', 'AND', 'OR', 'XOR', 'NAND', 'NOR', 'XNOR', '( )', '0', '1'];
 const examples = ['A AND B', 'NOT A OR B AND C', '(A XOR B) AND C', 'd[0] OR d[1]'];
 let timer, sequence = 0, latest = null, active = false, initialized = false, firstSuccess = true;
+const comparison = createCompare();
 
 function storage(key, value) {
   try { if (value === undefined) return localStorage.getItem(key); localStorage.setItem(key, value); }
@@ -65,26 +68,25 @@ for (const value of examples) {
 export function createQuick({onPending, onSuccess, onModeChange}) {
   async function request() {
     const seq = ++sequence, value = expression.value;
-    if (!value.trim()) { latest = null; renderDiagnostics(null); message('quick.empty'); return; }
+    if (!value.trim()) { latest = null; comparison.setFirst(value, false); renderDiagnostics(null); message('quick.empty'); return; }
     message('quick.checking');
     try {
-      const response = await fetch('/api/expression', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({expression:value})});
-      const result = await response.json();
+      const result = await requestExpression(value);
       if (seq !== sequence || !active || value !== expression.value) return;
-      if (!response.ok) throw new Error(result.error || t('result.http_error', {status:response.status}));
-      latest = result; renderDiagnostics(result);
+      latest = result; comparison.setFirst(value, result.ok); renderDiagnostics(result);
       if (!result.ok) { message('quick.invalid'); return; }
       generated.value = result.code; generatedEditor.clear();
       $('#quick-generated').hidden = false;
       message('quick.output', {name:result.output});
       onSuccess(result, firstSuccess);
       firstSuccess = false;
-    } catch (error) { if (seq === sequence && active) message('quick.request_error', {error:error.message}); }
+    } catch (error) { if (seq === sequence && active) { comparison.setFirst(value, false); message('quick.request_error', {error:error.message}); } }
   }
   function schedule() {
     storage('circuito.expression', expression.value);
     clearTimeout(timer); ++sequence;
     latest = null;
+    comparison.setFirst(expression.value, false);
     renderDiagnostics(null); message(expression.value.trim() ? 'quick.checking' : 'quick.empty');
     if (active) onPending();
     if (active) timer = setTimeout(request, 250);
@@ -96,6 +98,7 @@ export function createQuick({onPending, onSuccess, onModeChange}) {
     if (next === active && !editGenerated && initialized) return;
     initialized = true;
     clearTimeout(timer); ++sequence; active = next;
+    comparison.setActive(next);
     $('#quick-pane').hidden = !next; $('#full-pane').hidden = next;
     document.body.dataset.mode = mode;
     $('#mode-quick').setAttribute('aria-pressed', String(next));
@@ -109,5 +112,5 @@ export function createQuick({onPending, onSuccess, onModeChange}) {
   $('#quick-edit-full').addEventListener('click', () => setMode('full', true));
   document.addEventListener('languagechange', () => { if (active && latest?.ok) message('quick.output', {name:latest.output}); else if (active) renderDiagnostics(latest); });
   expression.value = storage('circuito.expression') || '';
-  return {setMode, getMode:() => active ? 'quick' : 'full', setTokens:tokens => generatedEditor.setTokens(tokens), getGenerated:() => generated.value, isFirstSuccess:() => firstSuccess};
+  return {setMode, getMode:() => active ? 'quick' : 'full', setExpression(value) { expression.value = value; if (active) schedule(); }, retry() { if (active) { clearTimeout(timer); request(); } }, getExpression:() => expression.value, setTokens:tokens => generatedEditor.setTokens(tokens), getGenerated:() => generated.value, isFirstSuccess:() => firstSuccess};
 }

@@ -407,7 +407,7 @@ def _free_name(base, used):
     return name
 
 
-def expression_to_program(expression):
+def expression_to_program(expression, declare=None):
     """Turn `A OR B` into a full Circuit program, compiled by the real pipeline.
 
     The expression is checked with the grammar's `expression` rule (its own lexical and
@@ -417,6 +417,9 @@ def expression_to_program(expression):
         circuit "expression"; input ...; output S; S = <expression>;
     Nothing here interprets the expression: the generated text goes through
     analyze_program like any other program.
+
+    `declare` ({name: width or None}) fixes the inputs and their order (adding ones the expression does
+    not mention), which keeps two expressions comparable (see compare_expressions).
 
     Returns {ok, code, expression, output, inputs, diagnostics}; `diagnostics` use offsets in
     the expression text when it is not valid.
@@ -447,6 +450,11 @@ def expression_to_program(expression):
                 order.append(node.name)
             if node.index is not None:
                 widths[node.name] = max(widths[node.name] or 0, node.index + 1)
+    if declare:
+        # the given inputs come first, in the given order, so two programs share the same columns
+        for name, width in declare.items():
+            widths[name] = width if widths.get(name) is None else max(widths[name], width or 0)
+        order = list(declare) + [name for name in order if name not in declare]
     declared = ", ".join(name if widths[name] is None else f"{name}[{widths[name]}]" for name in order)
     output = _free_name("S", set(order))
     lines = ['circuit "expression";']
@@ -455,3 +463,44 @@ def expression_to_program(expression):
     lines += [f"output {output};", "", f"{output} = {expression};", ""]
     return {"ok": True, "code": "\n".join(lines), "expression": expression, "output": output,
             "inputs": order, "diagnostics": []}
+
+
+def _signals_of(expression):
+    """{name: bus width or None} of the signals an expression mentions, or None if it is invalid."""
+    program = expression_to_program(expression)
+    if not program["ok"]:
+        return None, program
+    tree = build_ast(parse(program["expression"], rule="expression").tree)
+    widths = {}
+    for node in walk(tree):
+        if isinstance(node, Signal):
+            widths.setdefault(node.name, None)
+            if node.index is not None:
+                widths[node.name] = max(widths[node.name] or 0, node.index + 1)
+    return widths, program
+
+
+def compare_expressions(first, second, max_inputs=DEFAULT_MAX_INPUTS):
+    """Are two expressions the same logic function? Decided by comparing truth tables.
+
+    Both are compiled as full programs over the same inputs (the union of the signals they
+    mention) and the rows computed by the simulator are compared. Returns
+    {ok, equivalent, inputs, rows, differences: [{inputs, first, second}] (at most 16), diagnostics}.
+    """
+    widths_a, program_a = _signals_of(first)
+    widths_b, program_b = _signals_of(second)
+    if widths_a is None or widths_b is None:
+        return {"ok": False, "equivalent": None, "inputs": [], "rows": 0, "differences": [],
+                "diagnostics": {"first": program_a["diagnostics"] if widths_a is None else [],
+                                "second": program_b["diagnostics"] if widths_b is None else []}}
+    union = {**widths_a}
+    for name, width in widths_b.items():
+        union[name] = max(union[name] or 0, width or 0) or None if name in union else width
+    codes = [expression_to_program(e, declare=union) for e in (first, second)]
+    tables = [table_for_program(c["code"], max_inputs=max_inputs) for c in codes]
+    rows_a, rows_b = tables[0]["rows"], tables[1]["rows"]
+    differences = [{"inputs": ra[0], "first": ra[1][0], "second": rb[1][0]}
+                   for ra, rb in zip(rows_a, rows_b) if ra[1] != rb[1]]
+    return {"ok": True, "equivalent": not differences, "inputs": tables[0]["inputs"],
+            "rows": len(rows_a), "differences": differences[:16], "different_rows": len(differences),
+            "diagnostics": {"first": [], "second": []}}

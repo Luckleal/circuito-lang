@@ -44,6 +44,11 @@ def list_examples():
 
 
 def handle_api(path, body):
+    if path == "/api/compare":
+        first, second = body.get("first"), body.get("second")
+        if not all(isinstance(v, str) and len(v) <= 2000 for v in (first, second)):
+            raise ValueError("fields 'first' and 'second' must be strings of at most 2000 characters")
+        return api.compare_expressions(first, second)
     if path == "/api/expression":
         expression = body.get("expression")
         if not isinstance(expression, str) or len(expression) > 2000:

@@ -4,6 +4,7 @@ import {renderTree} from './tree.js';
 import {renderCircuit} from './circuit.js';
 import {createTable} from './table.js';
 import {renderAnalysis} from './analysis.js';
+import {createQuick} from './quick.js';
 import {t, detectLanguage, setLanguage, getLanguage, translateStatic} from './i18n.js';
 
 const $ = selector => document.querySelector(selector);
@@ -15,6 +16,7 @@ const tabs = [...document.querySelectorAll('[role="tab"]')];
 let examples = [], analysis = null, simulation = null, analyzedCode = '';
 let inputs = {}, activeTab = 'diagnostics', stale = false, busy = false;
 let analysisSeq = 0, tokenSeq = 0, simulationSeq = 0, tokenTimer;
+let fullCode = '', quickCode = '', quickResult = null;
 const table = createTable(panels.table, () => ({analysis, code:analyzedCode, inputs}), applyInputs);
 
 function save(key, value) { try { localStorage.setItem(key, value); } catch {} }
@@ -55,7 +57,7 @@ async function refreshTokens() {
   try { const result = await api.analyze(text); if (seq === tokenSeq && text === code.value) editor.setTokens(result.tokens); } catch {}
 }
 function onEdit() {
-  save('circuito.code', code.value);
+  if (quick.getMode() === 'full') { fullCode = code.value; save('circuito.code', code.value); }
   editor.clear();
   if (analysis) setStale(code.value !== analyzedCode);
   clearTimeout(tokenTimer);
@@ -143,6 +145,7 @@ async function runAnalysis() {
     analysis = result; analyzedCode = text; simulation = null;
     inputs = Object.fromEntries((result.inputs || []).map(bit => [bit, 0]));
     editor.setTokens(result.tokens); editor.setDiagnostics(result.diagnostics);
+    if (quick.getMode() === 'quick' && text === quickCode) quick.setTokens(result.tokens);
     setStale(code.value !== text); table.clear(); updateSummary();
     const count = result.diagnostics.filter(d => d.severity === 'error').length;
     status(count ? t('result.done_errors', {count}) : t('result.done'));
@@ -168,7 +171,16 @@ function renderActive() {
   const host = panels[activeTab]; intro(host, activeTab);
   if (!analysis) { empty(host, 'result.empty'); return; }
   if (activeTab === 'diagnostics') return renderDiagnostics(host);
-  if (activeTab === 'analysis') return renderAnalysis(host, {analysis, simulation, code:analyzedCode, selectSource, stale, tableSummary:panels.table.querySelector('.tt-summary-bar')?.textContent});
+  if (activeTab === 'analysis') {
+    if (quick.getMode() === 'quick' && quickResult?.ok && analyzedCode === quickResult.code) {
+      const note = document.createElement('section'); note.className = 'quick-analysis-note';
+      const heading = document.createElement('h3'); heading.textContent = t('quick.analysis_title');
+      const description = document.createElement('p'); description.textContent = t('quick.analysis_intro', {name:quickResult.output});
+      const source = document.createElement('pre'); source.textContent = quickResult.code;
+      note.append(heading, description, source); host.append(note);
+    }
+    return renderAnalysis(host, {analysis, simulation, code:analyzedCode, selectSource, stale, tableSummary:panels.table.querySelector('.tt-summary-bar')?.textContent});
+  }
   if (activeTab === 'tokens') return renderTokens(host);
   if (activeTab === 'cst' || activeTab === 'ast') {
     const tree = analysis[activeTab];
@@ -264,14 +276,42 @@ function populateExamples() {
   select.value = current;
 }
 async function init() {
-  code.value = load('circuito.code') || ''; editor.paint();
+  fullCode = load('circuito.code') || '';
+  code.value = fullCode; editor.paint();
   try {
     examples = await api.examples(); populateExamples();
     const initial = examples.find(example => example.name === 'half_adder');
-    if (!code.value && initial) code.value = initial.code;
+    if (!code.value && initial) { code.value = initial.code; fullCode = initial.code; }
     $('#examples').value = examples.find(example => example.code === code.value)?.name || '';
     $('#examples').addEventListener('change', () => { const example = examples.find(item => item.name === $('#examples').value); if (example) useCode(example.code); });
-    editor.paint(); await runAnalysis();
+    editor.paint();
+    quick.setMode(load('circuito.mode') === 'full' ? 'full' : 'quick');
+    if (quick.getMode() === 'full') await runAnalysis();
   } catch (error) { status(error.message); $('#analysis-summary').textContent = error.message; intro(panels.diagnostics, 'diagnostics'); const p = document.createElement('p'); p.className = 'empty'; p.textContent = error.message; panels.diagnostics.append(p); }
 }
+const quick = createQuick({
+  onPending() {
+    ++analysisSeq; ++simulationSeq;
+    busy = false; $('#analyze').disabled = false; $('#results-pane').removeAttribute('aria-busy'); $('#results-pane').classList.remove('is-loading'); updateAnalyzeButton();
+    if (analysis) setStale(true);
+  },
+  onSuccess(result, first) {
+    quickResult = result; quickCode = result.code;
+    useCode(result.code);
+    if (first) setTab('circuit');
+    runAnalysis();
+  },
+  onModeChange(mode, editGenerated) {
+    if (mode === 'quick') {
+      fullCode = code.value;
+      if (quickCode) useCode(quickCode);
+      if (analysis) setStale(true);
+      setView('editor');
+    } else {
+      useCode(editGenerated && quickCode ? quickCode : fullCode);
+      if (analysis) setStale(code.value !== analyzedCode);
+      renderActive();
+    }
+  }
+});
 translateStatic(); init();

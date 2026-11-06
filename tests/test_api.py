@@ -273,3 +273,58 @@ def test_why_explains_every_output_with_values():
 def test_name_is_known_as_soon_as_the_ast_exists():
     r = api.analyze_program('circuit "named";\ninput A;\noutput S;\nS = B;\n')
     assert r["stages"]["semantic"] == "error" and r["name"] == "named"
+
+
+# ---------- quick mode ----------
+
+def test_quick_expression_becomes_a_real_program():
+    r = api.expression_to_program("A OR B")
+    assert r["ok"] and r["output"] == "S" and r["inputs"] == ["A", "B"]
+    assert r["code"] == 'circuit "expression";\ninput A, B;\noutput S;\n\nS = A OR B;\n'
+    full = api.analyze_program(r["code"])
+    assert full["stages"]["semantic"] == "ok" and full["inputs"] == ["A", "B"]
+    sim = api.simulate_program(r["code"], {"A": 1, "B": 0})
+    assert sim["bits"]["S"] == 1
+
+
+def test_quick_mode_keeps_precedence_and_parentheses():
+    r = api.expression_to_program("NOT A OR B AND C")
+    table = api.table_for_program(r["code"])
+    for (a, b, c), (s,) in table["rows"]:
+        assert s == ((1 - a) | (b & c))
+
+
+def test_quick_mode_buses_and_constants():
+    r = api.expression_to_program("(d[0] OR d[2]) AND 1")
+    assert "input d[3];" in r["code"] and r["inputs"] == ["d"]
+    assert api.analyze_program(r["code"])["stages"]["semantic"] == "ok"
+    assert "input" not in api.expression_to_program("1 AND 0")["code"].split("output")[0].replace('circuit "expression";', "")
+
+
+def test_quick_mode_avoids_output_name_clash():
+    r = api.expression_to_program("S AND T")
+    assert r["output"] == "S2" and "S2 = S AND T;" in r["code"]
+    assert api.analyze_program(r["code"])["stages"]["semantic"] == "ok"
+
+
+def test_quick_mode_reports_errors_against_the_expression():
+    r = api.expression_to_program("A OR")
+    assert not r["ok"] and r["diagnostics"][0]["stage"] == "syntactic"
+    r = api.expression_to_program("A & B")
+    assert r["diagnostics"][0]["stage"] == "lexical" and r["diagnostics"][0]["column"] == 3
+    assert not api.expression_to_program("A // B")["ok"]
+    assert api.expression_to_program("   ")["code"] is None
+
+
+def test_quick_mode_cannot_inject_statements():
+    # the expression rule accepts one expression only, so extra statements are syntax errors
+    r = api.expression_to_program('A; input X')
+    assert not r["ok"]
+    r = api.expression_to_program("A\nOR\nB")          # newlines collapse into one line
+    assert r["ok"] and "S = A OR B;" in r["code"]
+
+
+def test_http_quick_expression(base_url):
+    status, body = post(base_url, "/api/expression", {"expression": "A XOR B"})
+    assert status == 200 and body["ok"] and "S = A XOR B;" in body["code"]
+    assert post(base_url, "/api/expression", {"expression": 5})[0] == 400

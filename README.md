@@ -6,7 +6,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-577_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-584_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Stage](https://img.shields.io/badge/stage-lexer_+_parser-2EA44F?style=flat-square)
 ![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
@@ -344,6 +344,8 @@ python src/interactive.py "NOT A OR B AND C"
 
 A local web interface runs the real compiler: write or import a `.circ` program, analyze it, inspect the tokens, the concrete syntax tree, the AST, the logic circuit drawn with gate symbols, the step-by-step evaluation and the truth table. It works on desktop and phone and follows the browser language (Portuguese, English, Spanish, French, German, Chinese, Japanese), which can be changed in the header.
 
+**Quick mode:** type just an expression such as `A OR B` and the interface builds a complete Circuit program from it (`circuit "expression"; input A, B; output S; S = A OR B;`), compiles it with the same pipeline and shows the circuit, the animation, the truth table and the written analysis. The generated program is always visible and can be opened in **Full program** mode, which is the whole language and compiler.
+
 ```bash
 python src/server.py        # then open http://127.0.0.1:8765/
 ```
@@ -361,7 +363,7 @@ In VS Code, press F5 and pick **Circuit: web interface**. The other launch confi
 python -m pytest
 ```
 
-577 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
+584 tests in `tests/`. They need `generated/`, so run `bash generate.sh` first.
 
 | File | What it covers |
 |---|---|

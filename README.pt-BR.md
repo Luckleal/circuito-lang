@@ -6,7 +6,7 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-577_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![pytest](https://img.shields.io/badge/pytest-584_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
 ![Etapa](https://img.shields.io/badge/etapa-lexer_+_parser-2EA44F?style=flat-square)
 ![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
@@ -346,6 +346,8 @@ python src/interactive.py "NOT A OR B AND C"
 ## Interface web
 
 Uma interface web local usa o compilador de verdade: escreva ou importe um programa `.circ`, analise e veja os tokens, a árvore sintática concreta, a AST, o circuito desenhado com os símbolos das portas, a avaliação passo a passo e a tabela-verdade. Funciona no computador e no celular e segue o idioma do navegador (português, inglês, espanhol, francês, alemão, chinês, japonês), que pode ser trocado no cabeçalho.
+
+**Modo rápido:** digite só uma expressão como `A OR B` e a interface monta um programa Circuit completo (`circuit "expression"; input A, B; output S; S = A OR B;`), compila pelo mesmo pipeline e mostra o circuito, a animação, a tabela-verdade e a análise escrita. O programa gerado fica sempre visível e pode ser aberto no modo **Programa completo**, que é a linguagem e o compilador inteiros.
 
 ```bash
 python src/server.py        # depois abra http://127.0.0.1:8765/

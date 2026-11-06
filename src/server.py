@@ -8,6 +8,7 @@ compiler (api.py). Programs are only parsed and analyzed: nothing from the reque
 ever executed, evaluated or passed to a shell.
 
 Endpoints (all POST with a JSON body, except GET /api/examples):
+  /api/expression {expression}                -> a complete program for `A OR B` (quick mode)
   /api/analyze   {code}                       -> analyze_program result
   /api/simulate  {code, inputs: {bit: 0|1}}   -> values per node + evaluation steps
   /api/table     {code, wires, max_inputs}    -> truth table (rows + text/md/csv)
@@ -43,6 +44,11 @@ def list_examples():
 
 
 def handle_api(path, body):
+    if path == "/api/expression":
+        expression = body.get("expression")
+        if not isinstance(expression, str) or len(expression) > 2000:
+            raise ValueError("field 'expression' must be a string of at most 2000 characters")
+        return api.expression_to_program(expression)
     code = body.get("code")
     if not isinstance(code, str):
         raise ValueError("field 'code' must be a string")

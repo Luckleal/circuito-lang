@@ -29,7 +29,7 @@ import re
 from antlr4.tree.Tree import TerminalNode
 
 from ast_builder import build_ast
-from ast_nodes import Constant, Not, Signal
+from ast_nodes import Constant, Not, Signal, walk
 from lexical import token_name, tokenize
 from semantic import analyze, bit_label, format_equation
 from simulator import GATES, analyze_timing, build_circuit, evaluate
@@ -395,3 +395,63 @@ def table_for_program(text, include_wires=False, max_inputs=DEFAULT_MAX_INPUTS):
             "outputs": [bit_label(b) for b in circuit.outputs + wires],
             "rows": [[list(i), list(o)] for i, o in rows],
             "formats": _render(headers, rows, n_inputs)}
+
+
+# ---------- quick mode: one expression -> a complete Circuit program ----------
+
+def _free_name(base, used):
+    name, n = base, 1
+    while name in used:
+        n += 1
+        name = f"{base}{n}"
+    return name
+
+
+def expression_to_program(expression):
+    """Turn `A OR B` into a full Circuit program, compiled by the real pipeline.
+
+    The expression is checked with the grammar's `expression` rule (its own lexical and
+    syntax errors are reported against the expression text). Every signal it mentions
+    becomes an `input` (a bus `d[0]`, `d[3]` becomes `input d[4]`), the result is the
+    `output` (S, or a free name if S is taken) and the program is
+        circuit "expression"; input ...; output S; S = <expression>;
+    Nothing here interprets the expression: the generated text goes through
+    analyze_program like any other program.
+
+    Returns {ok, code, expression, output, inputs, diagnostics}; `diagnostics` use offsets in
+    the expression text when it is not valid.
+    """
+    expression = " ".join(expression.split())          # one line: no newline can leak into the program
+    source = Source(expression)
+    failure = {"ok": False, "code": None, "expression": expression, "output": None,
+               "inputs": [], "diagnostics": []}
+    if not expression:
+        return failure
+    if "//" in expression:
+        failure["diagnostics"].append(_diagnostic("lexical", "error", 1, expression.index("//") + 1,
+                                                  "comments are not allowed in a quick expression", source))
+        return failure
+    parsed = parse(expression, rule="expression")
+    if parsed.lexical_errors or parsed.syntax_errors:
+        stage = "lexical" if parsed.lexical_errors else "syntactic"
+        failure["diagnostics"] = [_from_text(stage, m, source)
+                                  for m in parsed.lexical_errors + parsed.syntax_errors]
+        return failure
+
+    tree = build_ast(parsed.tree)
+    widths, order = {}, []
+    for node in walk(tree):
+        if isinstance(node, Signal):
+            if node.name not in widths:
+                widths[node.name] = None
+                order.append(node.name)
+            if node.index is not None:
+                widths[node.name] = max(widths[node.name] or 0, node.index + 1)
+    declared = ", ".join(name if widths[name] is None else f"{name}[{widths[name]}]" for name in order)
+    output = _free_name("S", set(order))
+    lines = ['circuit "expression";']
+    if order:
+        lines.append(f"input {declared};")
+    lines += [f"output {output};", "", f"{output} = {expression};", ""]
+    return {"ok": True, "code": "\n".join(lines), "expression": expression, "output": output,
+            "inputs": order, "diagnostics": []}

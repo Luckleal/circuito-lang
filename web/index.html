@@ -9,12 +9,14 @@
   <link rel="stylesheet" href="/styles.css">
   <link rel="stylesheet" href="/css/circuit.css">
   <link rel="stylesheet" href="/css/analysis.css">
+  <link rel="stylesheet" href="/css/quick.css">
   <script type="module" src="/js/main.js"></script>
 </head>
 <body>
   <header class="app-header">
     <div class="brand"><svg class="brand-mark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="6" cy="12" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 12h4l4-6M12 12l4 6"/></svg><span>circuito-lang</span><small data-i18n="app.lab"></small></div>
     <div class="header-actions">
+      <div class="mode-switch" role="group" data-i18n-aria="quick.mode_label"><button id="mode-quick" type="button" aria-pressed="true" data-i18n="quick.mode_quick"></button><button id="mode-full" type="button" aria-pressed="false" data-i18n="quick.mode_full"></button></div>
       <label class="example-label" for="examples" data-i18n="app.example"></label><select id="examples" data-i18n-aria="app.example_aria"><option data-i18n="app.loading"></option></select>
       <button id="import" type="button" data-i18n="app.import"></button><input id="file" type="file" accept=".circ,text/plain" hidden>
       <button id="download" type="button" data-i18n="app.download"></button>
@@ -26,9 +28,23 @@
   <nav class="mobile-tabs" data-i18n-aria="app.area"><button type="button" data-view="editor" class="active" data-i18n="app.editor"></button><button type="button" data-view="results" data-i18n="app.results"></button></nav>
   <main id="workspace" class="workspace" data-view="editor">
     <section id="editor-pane" class="editor-pane" data-i18n-aria="app.editor">
+      <div id="quick-pane" class="quick-pane" hidden>
+        <div class="quick-heading"><span class="quick-eyebrow" data-i18n="quick.eyebrow"></span><h1 data-i18n="quick.title"></h1><p data-i18n="quick.help"></p></div>
+        <div class="quick-body">
+          <label for="quick-expression" data-i18n="quick.label"></label>
+          <input id="quick-expression" type="text" placeholder="A OR B" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off" maxlength="2000" aria-describedby="quick-message quick-diagnostics">
+          <div id="quick-message" class="quick-message" role="status" aria-live="polite"></div>
+          <div id="quick-diagnostics" class="quick-diagnostics" aria-live="polite"></div>
+          <div class="quick-group"><p data-i18n="quick.operators"></p><div class="quick-chips" id="quick-operators"></div></div>
+          <div class="quick-group"><p data-i18n="quick.examples"></p><div class="quick-chips" id="quick-examples"></div></div>
+          <details id="quick-generated" class="quick-generated" hidden><summary data-i18n="quick.generated"></summary><div class="quick-generated-inner"><div class="quick-code-shell"><div id="quick-lines" class="line-numbers" aria-hidden="true">1</div><div class="quick-code-stack"><pre id="quick-highlight" aria-hidden="true"></pre><textarea id="quick-code" readonly tabindex="-1" data-i18n-aria="quick.generated_aria"></textarea></div></div><button id="quick-edit-full" type="button" data-i18n="quick.edit_full"></button></div></details>
+        </div>
+      </div>
+      <div id="full-pane" class="full-pane">
       <div class="pane-heading"><div><h1 data-i18n="app.editor"></h1><p data-i18n="app.editor_help"></p></div><span id="editor-state" class="pill" data-i18n="app.ready"></span></div>
       <div class="code-shell"><div id="lines" class="line-numbers" aria-hidden="true">1</div><div class="code-stack"><div id="current-line" aria-hidden="true"></div><pre id="highlight" aria-hidden="true"></pre><textarea id="code" data-i18n-aria="app.code_aria" spellcheck="false" autocapitalize="off" autocomplete="off" autocorrect="off"></textarea></div></div>
       <div class="editor-footer"><span data-i18n="app.file"></span><span id="cursor"></span></div>
+      </div>
     </section>
     <div id="splitter" class="splitter" role="separator" tabindex="0" data-i18n-aria="app.resize" aria-orientation="vertical" aria-valuemin="25" aria-valuemax="75" aria-valuenow="43"></div>
     <section id="results-pane" class="results-pane" data-i18n-aria="app.results">

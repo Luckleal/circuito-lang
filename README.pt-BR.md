@@ -7,7 +7,7 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
 ![pytest](https://img.shields.io/badge/pytest-596_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
-![Etapa](https://img.shields.io/badge/etapa-lexer_+_parser-2EA44F?style=flat-square)
+![Etapa](https://img.shields.io/badge/etapa-E4_sem%C3%A2ntica_+_simula%C3%A7%C3%A3o_+_web-2EA44F?style=flat-square)
 ![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
 [A linguagem](#a-linguagem) ·
@@ -16,7 +16,7 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 [Precedência](#operadores-e-precedência) ·
 [Erros](#relatório-de-erros) ·
 [Modo interativo](#modo-interativo) ·
-[Online](#online) ·
+[Online](https://ghostwhite-baboon-560331.hostingersite.com/) ·
 [Interface web](#interface-web) ·
 [Testes](#testes) ·
 [Status](#status-do-projeto) ·
@@ -345,6 +345,8 @@ python src/interactive.py "NOT A OR B AND C"
 ```
 
 ## Online
+
+**Teste no navegador: <https://ghostwhite-baboon-560331.hostingersite.com/>**
 
 A interface é um site estático que pode ficar em qualquer hospedagem (não precisa de Python no servidor).
 

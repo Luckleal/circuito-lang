@@ -7,7 +7,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
 ![pytest](https://img.shields.io/badge/pytest-596_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
-![Stage](https://img.shields.io/badge/stage-lexer_+_parser-2EA44F?style=flat-square)
+![Stage](https://img.shields.io/badge/stage-E4_semantics_+_simulation_+_web-2EA44F?style=flat-square)
 ![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
 [The language](#the-language) ·
@@ -16,7 +16,7 @@ A small language for describing combinational logic circuits.<br>Declare signals
 [Precedence](#operators-and-precedence) ·
 [Errors](#error-reporting) ·
 [Interactive mode](#interactive-mode) ·
-[Online](#online) ·
+[Online](https://ghostwhite-baboon-560331.hostingersite.com/) ·
 [Web interface](#web-interface) ·
 [Tests](#tests) ·
 [Status](#project-status) ·
@@ -342,6 +342,8 @@ python src/interactive.py "NOT A OR B AND C"
 ```
 
 ## Online
+
+**Try it in the browser: <https://ghostwhite-baboon-560331.hostingersite.com/>**
 
 The interface is a static site that can be hosted anywhere (it does not need Python on the server).
 

@@ -6,8 +6,9 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
-![pytest](https://img.shields.io/badge/pytest-202_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
-![Etapa](https://img.shields.io/badge/etapa-lexer_+_parser-2EA44F?style=flat-square)
+![pytest](https://img.shields.io/badge/pytest-596_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
+![Etapa](https://img.shields.io/badge/etapa-E4_sem%C3%A2ntica_+_simula%C3%A7%C3%A3o_+_web-2EA44F?style=flat-square)
+![CI](https://img.shields.io/github/actions/workflow/status/Luckleal/circuito-lang/ci.yml?branch=main&style=flat-square&label=CI)
 
 [A linguagem](#a-linguagem) ·
 [Instalar e rodar](#instalar-e-rodar) ·
@@ -15,6 +16,8 @@ Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Decla
 [Precedência](#operadores-e-precedência) ·
 [Erros](#relatório-de-erros) ·
 [Modo interativo](#modo-interativo) ·
+[Online](https://ghostwhite-baboon-560331.hostingersite.com/) ·
+[Interface web](#interface-web) ·
 [Testes](#testes) ·
 [Status](#status-do-projeto) ·
 [Especificação](docs/specification.md)
@@ -341,6 +344,38 @@ Comandos: `:help` e `:quit` (também `:q`, Ctrl+D ou Ctrl+C). Para analisar uma 
 python src/interactive.py "NOT A OR B AND C"
 ```
 
+## Online
+
+**Teste no navegador: <https://ghostwhite-baboon-560331.hostingersite.com/>**
+
+A interface é um site estático que pode ficar em qualquer hospedagem (não precisa de Python no servidor).
+
+O site é estático: o compilador de verdade (o mesmo código Python e o mesmo parser ANTLR) roda no navegador por meio do [Pyodide](https://pyodide.org), sem servidor. A primeira visita baixa o ambiente uma vez.
+
+```bash
+python scripts/build_site.py site          # gera o site estático em site/
+python scripts/build_site.py site --zip    # também gera site.zip, pronto para subir em qualquer hospedagem estática
+```
+
+Suba o conteúdo de `site/` (ou descompacte o `site.zip`) na pasta pública de qualquer hospedagem estática. Os caminhos relativos funcionam também em subpasta. O botão **Copiar link** gera uma URL que compartilha uma expressão ou programa: a página abre, carrega e analisa.
+
+## Interface web
+
+Uma interface web local usa o compilador de verdade: escreva ou importe um programa `.circ`, analise e veja os tokens, a árvore sintática concreta, a AST, o circuito desenhado com os símbolos das portas, a avaliação passo a passo e a tabela-verdade. Funciona no computador e no celular e segue o idioma do navegador (português, inglês, espanhol, francês, alemão, chinês, japonês), que pode ser trocado no cabeçalho.
+
+**Modo rápido:** digite só uma expressão como `A OR B` e a interface monta um programa Circuit completo (`circuit "expression"; input A, B; output S; S = A OR B;`), compila pelo mesmo pipeline e mostra o circuito, a animação, a tabela-verdade e a análise escrita. O programa gerado fica sempre visível e pode ser aberto no modo **Programa completo**, que é a linguagem e o compilador inteiros.
+
+```bash
+python src/server.py        # depois abra http://127.0.0.1:8765/
+```
+
+O servidor escuta só em `127.0.0.1` e não precisa de nada além do `requirements.txt`. Ele chama `lexical.py`, `syntactic.py`, `ast_builder.py`, `semantic.py` e `simulator.py` por meio de `src/api.py`, então a linha de comando e a interface usam as mesmas regras. Os programas só são analisados, nunca executados.
+
+> [!NOTE]
+> A árvore sintática concreta, a AST e o circuito são coisas diferentes: a primeira é como o parser derivou o texto, a segunda guarda só o que o programa significa, a terceira é a rede de portas e fios. A animação passo a passo mostra a ordem de avaliação de um circuito combinacional; não é uma simulação temporal. O `@delay` segue a regra da seção [Simulação](#simulação). A tabela-verdade ajuda a conferir o comportamento; não prova que o compilador está correto.
+
+No VS Code, aperte F5 e escolha **Circuit: web interface**. As outras configurações rodam o simulador, a análise semântica e a AST no arquivo atual. Uma extensão mínima de realce para `.circ` está em `vscode/circuit-language/`.
+
 ## Testes
 
 ```bash
@@ -385,7 +420,7 @@ echo "NOT A OR B AND C" | antlr4-parse grammar/Circuit.g4 expr -tree
 | E3 | Analisador sintático, árvore sintática e AST (montada com o visitor) | Pronta |
 | E4 | Análise semântica e execução | Pronta |
 
-A análise semântica e a simulação estão completas. Desenhar o circuito com os símbolos das portas (SVG) ainda não foi implementado.
+A análise semântica e a simulação estão completas. A interface web local desenha o circuito com os símbolos das portas e anima a avaliação (veja [Interface web](#interface-web)).
 
 ## Estrutura do repositório
 
@@ -395,7 +430,10 @@ circuito-lang/
 ├── requirements.txt · pytest.ini
 ├── grammar/Circuit.g4      regras de lexer e de parser
 ├── generate.sh             regenera o código do ANTLR em generated/
-├── src/                    lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py · simulator.py
+├── web/                    interface web (HTML, CSS, módulos JS)
+├── scripts/                build_site.py: site estático e zip
+├── vscode/                 extensão mínima do VS Code para .circ
+├── src/                    api.py · server.py · lexical.py · syntactic.py · interactive.py · ast_nodes.py · ast_builder.py · semantic.py · error_strategy.py · simulator.py
 ├── examples/               programas válidos e inválidos
 ├── tests/                  suíte do pytest
 └── docs/

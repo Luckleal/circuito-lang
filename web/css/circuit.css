@@ -1,0 +1,1337 @@
+/* ==========================================================================
+   circuito-lang — Circuit View, Didactic Animation Player & Truth Table
+   Monochrome graphite + restrained cyan accent (--accent), 1px borders, glow-free
+   ========================================================================== */
+
+/* Hide legacy duplicate controls in #panel-circuit when enhanced circuit workspace is mounted */
+#panel-circuit.has-enhanced-circuit > .input-groups,
+#panel-circuit.has-enhanced-circuit > .toolbar,
+#panel-circuit.has-enhanced-circuit > .player,
+#panel-circuit.has-enhanced-circuit > .intro {
+  display: none !important;
+}
+
+#panel-circuit.has-enhanced-circuit {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 520px;
+}
+
+#panel-circuit.has-enhanced-circuit > div {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* --------------------------------------------------------------------------
+   1. Circuit Workspace & Toolbar
+   -------------------------------------------------------------------------- */
+.circuit-workspace {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 500px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.circuit-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-wrap: wrap;
+}
+
+.circuit-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.circuit-tool-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text);
+  background: var(--raised);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  transition: border-color 140ms ease-out, background-color 140ms ease-out, color 140ms ease-out;
+}
+
+.circuit-tool-btn.icon-only {
+  min-width: 30px;
+  padding: 4px 8px;
+  font-family: var(--mono);
+  font-size: 14px;
+}
+
+.circuit-tool-btn:hover:not(:disabled) {
+  border-color: var(--muted);
+}
+
+.circuit-tool-btn.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--raised));
+}
+
+.crit-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: background-color 140ms ease-out;
+}
+
+.critical-toggle-btn.is-active .crit-dot {
+  background: var(--accent);
+}
+
+.circuit-crit-pill {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 8px;
+  font: 11.5px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.circuit-crit-pill.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.circuit-crit-pill.is-muted {
+  color: var(--muted);
+}
+
+.crit-pill-short {
+  display: none;
+}
+
+.circuit-tool-btn .tool-icon {
+  flex: none;
+}
+
+/* --------------------------------------------------------------------------
+   2. SVG Stage & Vector Diagram
+   -------------------------------------------------------------------------- */
+.circuit-stage {
+  position: relative;
+  flex: 1;
+  min-height: 360px;
+  background: var(--bg);
+  overflow: hidden;
+}
+
+.circuit-svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 360px;
+  touch-action: none;
+  cursor: grab;
+  user-select: none;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.circuit-svg:active {
+  cursor: grabbing;
+}
+
+.circuit-svg:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* Bus brackets */
+.bus-bracket-path {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 1.5;
+  stroke-linecap: square;
+}
+
+.bus-bracket-label {
+  fill: var(--muted);
+  font: 600 11.5px var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Orthogonal Wires & Junctions */
+.wire-trunk,
+.wire-branch-highlight {
+  fill: none;
+  stroke: var(--muted);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 160ms ease-out, opacity 160ms ease-out;
+}
+
+.wire-trunk.val-0,
+.wire-branch-highlight.val-0 {
+  stroke: color-mix(in srgb, var(--muted) 72%, var(--border));
+}
+
+.wire-trunk.val-1,
+.wire-branch-highlight.val-1 {
+  stroke: var(--accent);
+}
+
+.wire-trunk.val-pending,
+.wire-branch-highlight.val-pending {
+  stroke: var(--border);
+  stroke-dasharray: 4 4;
+}
+
+.wire-junction {
+  fill: color-mix(in srgb, var(--muted) 72%, var(--border));
+  transition: fill 160ms ease-out, opacity 160ms ease-out;
+}
+
+.wire-junction.val-1 {
+  fill: var(--accent);
+}
+
+.wire-junction.val-pending {
+  fill: var(--border);
+}
+
+/* Critical path moving dash */
+.wire-trunk.is-critical,
+.wire-branch-highlight.is-critical {
+  stroke: var(--accent);
+  stroke-width: 2.75;
+  stroke-dasharray: 8 5;
+  animation: crit-dash-flow 0.65s linear infinite;
+}
+
+/* Active step input pulse */
+.wire-branch-highlight.is-active-input {
+  stroke-width: 2.75;
+}
+
+.wire-branch-highlight.is-pulsing {
+  stroke-dasharray: 10 6;
+  animation: crit-dash-flow 0.36s linear infinite;
+}
+
+.wire-pulse-dot {
+  fill: var(--text);
+  stroke: var(--accent);
+  stroke-width: 2;
+  pointer-events: none;
+}
+
+.wire-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 14;
+  cursor: pointer;
+}
+
+/* Net trunk labels */
+.wire-net-bg {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.wire-trunk-label {
+  fill: var(--muted);
+  font: 500 11px var(--mono);
+  pointer-events: none;
+}
+
+/* Value chips near target pins */
+.wire-chip {
+  transition: opacity 150ms ease-out;
+  pointer-events: none;
+}
+
+.circuit-svg.zoom-low .wire-chip {
+  opacity: 0;
+}
+
+.wire-chip-bg {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.wire-chip-bg.val-1 {
+  stroke: var(--accent);
+  fill: color-mix(in srgb, var(--accent) 14%, var(--surface));
+}
+
+.wire-chip-text {
+  fill: var(--muted);
+  font: 700 11px var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.wire-chip-text.val-1 {
+  fill: var(--accent);
+}
+
+/* Gate & Terminal Nodes */
+.circuit-node-pos {
+  cursor: pointer;
+  transition: opacity 160ms ease-out;
+}
+
+.circuit-node-pos:focus-visible {
+  outline: none;
+}
+
+.circuit-node-pos:focus-visible .terminal-body,
+.circuit-node-pos:focus-visible .gate-body {
+  stroke: var(--accent);
+  stroke-width: 2.75;
+}
+
+.circuit-node-body.is-settling {
+  animation: gate-settle 340ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.pin-stub {
+  stroke: color-mix(in srgb, var(--muted) 72%, var(--border));
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.pin-stub.val-1 {
+  stroke: var(--accent);
+}
+
+.pin-stub.val-pending {
+  stroke: var(--border);
+}
+
+.pin-dot {
+  fill: color-mix(in srgb, var(--muted) 72%, var(--border));
+}
+
+.pin-dot.val-1 {
+  fill: var(--accent);
+}
+
+.terminal-body,
+.gate-body,
+.gate-bubble {
+  fill: var(--raised);
+  stroke: var(--border);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+  transition: stroke 160ms ease-out, fill 160ms ease-out;
+}
+
+.gate-xor-arc {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 2;
+  stroke-linecap: round;
+  transition: stroke 160ms ease-out;
+}
+
+.circuit-node-pos:hover .terminal-body,
+.circuit-node-pos:hover .gate-body,
+.circuit-node-pos:hover .gate-bubble,
+.circuit-node-pos:hover .gate-xor-arc {
+  stroke: var(--muted);
+}
+
+.terminal-body.is-high,
+.gate-body.val-1,
+.gate-bubble.val-1 {
+  stroke: color-mix(in srgb, var(--accent) 75%, var(--border));
+}
+
+.circuit-node-pos.is-current-step .gate-body,
+.circuit-node-pos.is-current-step .gate-bubble,
+.circuit-node-pos.is-current-step .gate-xor-arc,
+.circuit-node-pos.is-current-step .terminal-body,
+.circuit-node-pos.is-selected .gate-body,
+.circuit-node-pos.is-selected .gate-bubble,
+.circuit-node-pos.is-selected .gate-xor-arc,
+.circuit-node-pos.is-selected .terminal-body,
+.circuit-node-pos.is-critical .gate-body,
+.circuit-node-pos.is-critical .gate-bubble,
+.circuit-node-pos.is-critical .gate-xor-arc {
+  stroke: var(--accent);
+  stroke-width: 2.5;
+}
+
+.circuit-node-pos.is-pending .gate-body,
+.circuit-node-pos.is-pending .gate-bubble,
+.circuit-node-pos.is-pending .terminal-body {
+  stroke-dasharray: 4 3;
+  opacity: 0.78;
+}
+
+/* Input Toggle Switch */
+.switch-track {
+  fill: var(--bg);
+  stroke: var(--border);
+  stroke-width: 1.5;
+  transition: fill 150ms ease-out, stroke 150ms ease-out;
+}
+
+.switch-track.is-on {
+  fill: color-mix(in srgb, var(--accent) 22%, var(--bg));
+  stroke: var(--accent);
+}
+
+.switch-thumb {
+  fill: var(--muted);
+  transition: cx 150ms cubic-bezier(0.22, 1, 0.36, 1), fill 150ms ease-out;
+}
+
+.switch-thumb.is-on {
+  fill: var(--accent);
+}
+
+.terminal-label {
+  fill: var(--text);
+  font: 600 12.5px var(--mono);
+  pointer-events: none;
+}
+
+.terminal-label.is-long {
+  font-size: 11px;
+}
+
+.terminal-value {
+  fill: var(--muted);
+  font: 700 13px var(--mono);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.terminal-value.val-1 {
+  fill: var(--accent);
+}
+
+/* Output Indicator Lamp */
+.output-lamp {
+  fill: var(--bg);
+  stroke: var(--border);
+  stroke-width: 1.75;
+  transition: fill 160ms ease-out, stroke 160ms ease-out;
+}
+
+.output-lamp.val-1 {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+
+.output-lamp.val-pending {
+  stroke-dasharray: 3 3;
+}
+
+.lamp-value {
+  fill: var(--muted);
+  font: 700 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+.lamp-value.val-1 {
+  fill: #06131b;
+}
+
+/* Gate labels & @delay badge */
+.gate-op-label {
+  fill: var(--muted);
+  font: 600 10.5px var(--mono);
+  letter-spacing: 0.03em;
+  pointer-events: none;
+}
+
+.delay-pill-bg {
+  fill: var(--surface);
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.delay-pill-text {
+  fill: var(--muted);
+  font: 500 10.5px var(--mono);
+  font-variant-numeric: tabular-nums;
+  pointer-events: none;
+}
+
+/* Fan-in / Fan-out selection dimming */
+.circuit-svg.has-selection .circuit-node-pos:not(.is-related):not(.is-selected) {
+  opacity: 0.32;
+}
+
+.circuit-svg.has-selection .wire-trunk:not(.is-related):not(.is-selected),
+.circuit-svg.has-selection .wire-junction:not(.is-related),
+.circuit-svg.has-selection .wire-chip:not(.is-related),
+.circuit-svg.has-selection .wire-net-badge:not(.is-related) {
+  opacity: 0.25;
+}
+
+.wire-trunk.is-selected,
+.wire-branch-highlight.is-selected {
+  stroke: var(--accent);
+  stroke-width: 2.8;
+}
+
+/* --------------------------------------------------------------------------
+   3. Corner Inspector Panel (Anchored & Collapsible)
+   -------------------------------------------------------------------------- */
+.circuit-inspector {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  width: min(320px, calc(100% - 24px));
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  z-index: 2;
+  transition: opacity 160ms ease-out, transform 240ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.circuit-inspector.is-idle {
+  width: auto;
+  max-width: min(340px, calc(100% - 24px));
+  padding: 6px 10px;
+  opacity: 0.86;
+  pointer-events: none;
+}
+
+.inspector-idle-text {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 0;
+}
+
+.inspector-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.circuit-inspector.is-collapsed .inspector-header {
+  border-bottom: 0;
+}
+
+.circuit-inspector.is-collapsed .inspector-body {
+  display: none;
+}
+
+.inspector-title {
+  font: 600 12px var(--mono);
+  color: var(--text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.inspector-header-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.inspector-icon-btn {
+  min-width: 24px;
+  min-height: 24px;
+  padding: 0 5px;
+  font-size: 13px;
+  line-height: 1;
+  border-radius: 4px;
+}
+
+.inspector-body {
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.inspector-formula {
+  padding: 5px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font: 600 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.inspector-grid {
+  margin: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 10px;
+  font-size: 12px;
+}
+
+.inspector-grid dt {
+  color: var(--muted);
+}
+
+.inspector-grid dd {
+  margin: 0;
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  text-align: right;
+}
+
+.inspector-grid dd.inspector-why-dd {
+  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+  font-size: 11.5px;
+  line-height: 1.35;
+}
+
+.inspector-code-btn {
+  width: 100%;
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 4px;
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* --------------------------------------------------------------------------
+   4. Didactic Animation Player Bar
+   -------------------------------------------------------------------------- */
+.circuit-player {
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.circuit-player-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.player-transport {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.player-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 30px;
+  min-width: 30px;
+  padding: 4px 8px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.player-btn.play-toggle {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.player-btn.play-toggle.is-playing {
+  background: var(--accent);
+  color: #06131b;
+}
+
+.player-btn.show-result-btn {
+  padding: 4px 9px;
+  font-size: 11.5px;
+}
+
+.player-btn.show-result-btn.is-highlighted:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.player-scrubber-wrap {
+  flex: 1;
+  min-width: 120px;
+  display: flex;
+  align-items: center;
+  padding: 0 6px;
+}
+
+.player-scrubber {
+  position: relative;
+  width: 100%;
+  height: 6px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  cursor: pointer;
+}
+
+.scrubber-fill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  background: var(--accent);
+  border-radius: 999px;
+  transition: width 150ms ease-out;
+}
+
+.scrubber-ticks {
+  position: absolute;
+  inset: 0;
+}
+
+.scrubber-tick {
+  position: absolute;
+  top: 50%;
+  width: 8px;
+  height: 8px;
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: var(--raised);
+  border: 1px solid var(--border);
+}
+
+.scrubber-tick.is-passed {
+  border-color: var(--accent);
+  background: var(--accent);
+}
+
+.scrubber-tick.is-current {
+  width: 11px;
+  height: 11px;
+  background: var(--text);
+  border: 2px solid var(--accent);
+}
+
+.player-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-scrubber-toggle {
+  display: none;
+}
+
+.player-scrubber-toggle.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.player-counter {
+  font: 600 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  min-width: 42px;
+  text-align: right;
+}
+
+.player-speed select {
+  min-height: 28px;
+  padding: 2px 7px;
+  font: 11.5px var(--mono);
+  font-variant-numeric: tabular-nums;
+  border-radius: 4px;
+}
+
+.circuit-player-footer {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 2px;
+}
+
+.player-explanation {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 12.5px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.step-inline-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  font-size: 11px;
+  color: var(--accent);
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+}
+
+.player-didactic-note {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   5. Truth Table (Virtualized, Sticky Grouped Header, Tabular Numerals)
+   -------------------------------------------------------------------------- */
+#panel-table > .intro {
+  display: none;
+}
+
+.tt-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.tt-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tt-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.tt-btn,
+.tt-filter-select {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+.tt-wire-short,
+.tt-md-short {
+  display: none;
+}
+
+.tt-filter-select {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-filter-select.is-active {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.tt-checkbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text);
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.tt-checkbox input {
+  accent-color: var(--accent);
+}
+
+.tt-summary-bar {
+  font: 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  padding: 6px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.tt-viewport {
+  max-height: min(60vh, 520px);
+  min-height: 220px;
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+}
+
+.tt-table {
+  width: 100%;
+  border-collapse: collapse;
+  font: 12.5px var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+
+.tt-table th,
+.tt-table td {
+  padding: 6px 12px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+}
+
+.tt-group-row th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  padding: 4px 10px;
+  font: 600 10.5px system-ui, -apple-system, sans-serif;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+}
+
+.tt-col-row th {
+  position: sticky;
+  top: 25px;
+  z-index: 2;
+  background: var(--surface);
+  color: var(--text);
+  font-weight: 650;
+  border-bottom: 1px solid var(--border);
+}
+
+.tt-table .group-end,
+.tt-group-th.group-inputs,
+.tt-group-th.group-outputs:not(:last-child) {
+  border-right: 1px solid var(--border);
+}
+
+.tt-row {
+  cursor: pointer;
+  transition: background-color 120ms ease-out;
+}
+
+.tt-row:hover {
+  background: var(--raised);
+}
+
+.tt-row.is-focused {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
+.tt-row.is-current {
+  background: color-mix(in srgb, var(--accent) 13%, transparent);
+  box-shadow: inset 3px 0 0 var(--accent);
+  font-weight: 700;
+}
+
+.tt-row td.col-input.val-1 {
+  color: var(--accent);
+}
+
+.tt-row td.col-input.val-0 {
+  color: var(--muted);
+}
+
+.tt-row td.col-output.val-1 {
+  color: var(--text);
+  font-weight: 700;
+}
+
+.tt-row td.col-output.val-0 {
+  color: var(--muted);
+}
+
+.tt-row td.col-wire,
+.tt-col-row th.col-wire {
+  color: var(--muted);
+  opacity: 0.72;
+}
+
+.tt-spacer td {
+  padding: 0 !important;
+  border: 0 !important;
+}
+
+.tt-empty-cell {
+  padding: 24px !important;
+  color: var(--muted);
+}
+
+.tt-conference-note {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   6. Keyframes & Responsive Adjustments
+   -------------------------------------------------------------------------- */
+@keyframes crit-dash-flow {
+  to {
+    stroke-dashoffset: -13;
+  }
+}
+
+@keyframes gate-settle {
+  0% {
+    opacity: 0.65;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wire-trunk.is-critical,
+  .wire-branch-highlight.is-critical,
+  .wire-branch-highlight.is-pulsing,
+  .circuit-node-body.is-settling {
+    animation: none !important;
+  }
+}
+
+@media (max-width: 900px) {
+  #panel-circuit.has-enhanced-circuit {
+    min-height: 0;
+    height: 100%;
+  }
+
+  .circuit-workspace {
+    min-height: 330px;
+    height: 100%;
+    max-width: 100%;
+  }
+
+  /* Icon-only toolbar in one single row */
+  .circuit-toolbar {
+    flex-wrap: nowrap;
+    padding: 4px 8px;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .circuit-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .circuit-toolbar-group {
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+
+  .circuit-tool-btn {
+    min-width: 32px;
+    min-height: 32px;
+    padding: 4px 7px;
+  }
+
+  .circuit-tool-btn .btn-label {
+    display: none;
+  }
+
+  .circuit-crit-pill.is-muted {
+    display: none;
+  }
+
+  .circuit-crit-pill {
+    height: 26px;
+    padding: 0 6px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+
+  .circuit-crit-pill .crit-pill-full {
+    display: none;
+  }
+
+  .circuit-crit-pill .crit-pill-short {
+    display: inline;
+  }
+
+  /* Stage & SVG sizing */
+  .circuit-stage {
+    min-height: 210px;
+    flex: 1;
+  }
+
+  .circuit-svg {
+    min-height: 210px;
+    height: 100%;
+  }
+
+  /* Hint hidden until selection; Inspector as a bottom sheet */
+  .circuit-inspector.is-idle {
+    display: none !important;
+  }
+
+  .circuit-inspector.has-target {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    max-width: 100%;
+    border-radius: 10px 10px 0 0;
+    border-left: 0;
+    border-right: 0;
+    border-bottom: 0;
+    border-top: 1px solid var(--accent);
+    background: var(--surface);
+    box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.48);
+    z-index: 4;
+  }
+
+  .circuit-inspector.has-target::before {
+    content: "";
+    display: block;
+    width: 32px;
+    height: 3px;
+    margin: 5px auto 0;
+    border-radius: 2px;
+    background: var(--border);
+  }
+
+  .inspector-header {
+    padding: 3px 10px 5px;
+  }
+
+  .inspector-body {
+    padding: 5px 10px 8px;
+    gap: 4px;
+    max-height: 225px;
+    overflow-y: auto;
+  }
+
+  .inspector-formula {
+    padding: 2px 7px;
+    font-size: 11px;
+  }
+
+  .inspector-grid {
+    gap: 1px 8px;
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .inspector-grid dd.inspector-why-dd {
+    font-size: 11px;
+    line-height: 1.25;
+  }
+
+  .inspector-code-btn {
+    min-height: 26px;
+    padding: 2px 8px;
+    font-size: 11px;
+  }
+
+  /* Compacted player with collapsible scrubber */
+  .circuit-player {
+    padding: 5px 8px;
+    gap: 3px;
+  }
+
+  .circuit-player-bar {
+    flex-wrap: nowrap;
+    justify-content: space-between;
+    gap: 6px;
+  }
+
+  .circuit-player.is-scrubber-open .circuit-player-bar {
+    flex-wrap: wrap;
+  }
+
+  .player-transport {
+    gap: 3px;
+  }
+
+  .player-btn {
+    min-height: 30px;
+    min-width: 30px;
+    padding: 3px 6px;
+  }
+
+  .player-btn.show-result-btn {
+    padding: 3px 6px;
+  }
+
+  .player-btn.show-result-btn .player-btn-label {
+    display: none;
+  }
+
+  .player-scrubber-toggle {
+    display: inline-flex;
+  }
+
+  .player-scrubber-wrap {
+    display: none;
+    order: 3;
+    flex-basis: 100%;
+    padding: 4px 4px 2px;
+  }
+
+  .circuit-player.is-scrubber-open .player-scrubber-wrap {
+    display: flex;
+  }
+
+  .player-meta {
+    gap: 4px;
+  }
+
+  .player-counter {
+    font-size: 11.5px;
+    min-width: 34px;
+  }
+
+  .player-speed select {
+    min-height: 28px;
+    padding: 2px 5px;
+    font-size: 11px;
+  }
+
+  .circuit-player-footer {
+    gap: 2px 8px;
+    padding-top: 0;
+  }
+
+  .player-explanation {
+    font-size: 11px;
+    gap: 6px;
+    line-height: 1.3;
+  }
+
+  .step-inline-badge {
+    padding: 0 5px;
+    font-size: 10px;
+  }
+
+  .player-didactic-note {
+    font-size: 10px;
+    line-height: 1.25;
+  }
+
+  /* Compact Truth Table on 390x844 and 820x1180 */
+  .tt-container {
+    gap: 6px;
+  }
+
+  .tt-toolbar {
+    flex-wrap: nowrap;
+    gap: 3px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 1px;
+  }
+
+  .tt-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-toolbar-group {
+    flex-wrap: nowrap;
+    gap: 3px;
+  }
+
+  .tt-btn,
+  .tt-filter-select {
+    min-height: 28px;
+    min-width: 26px;
+    padding: 2px 5px;
+    font-size: 11px;
+    gap: 3px;
+    white-space: nowrap;
+  }
+
+  .tt-filter-select {
+    padding: 2px 3px;
+    font-size: 10.5px;
+  }
+
+  .tt-export-btn .tt-icon {
+    display: none;
+  }
+
+  .tt-btn:not(.primary) .tt-btn-label {
+    display: none;
+  }
+
+  .tt-wire-full,
+  .tt-md-full {
+    display: none;
+  }
+
+  .tt-wire-short,
+  .tt-md-short {
+    display: inline;
+  }
+
+  .tt-checkbox {
+    font-size: 11px;
+    gap: 3px;
+    padding: 0;
+    white-space: nowrap;
+  }
+
+  .tt-checkbox input {
+    margin: 0;
+    width: 13px;
+    height: 13px;
+  }
+
+  .tt-summary-bar {
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .tt-summary-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .tt-viewport {
+    max-height: calc(100dvh - 320px);
+    min-height: 180px;
+  }
+
+  .tt-table {
+    font-size: 11.5px;
+  }
+
+  .tt-table th,
+  .tt-table td {
+    padding: 4px 6px;
+  }
+}

@@ -1,0 +1,48 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Circuit: simulate the current file (truth table)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "C:\\Users\\jonas\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "program": "${workspaceFolder}/src/simulator.py",
+      "args": ["${file}"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Circuit: semantic analysis of the current file",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "C:\\Users\\jonas\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "program": "${workspaceFolder}/src/semantic.py",
+      "args": ["${file}"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Circuit: AST of the current file",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "C:\\Users\\jonas\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "program": "${workspaceFolder}/src/syntactic.py",
+      "args": ["--ast", "${file}"],
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Circuit: interactive expression analyzer",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "C:\\Users\\jonas\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "program": "${workspaceFolder}/src/interactive.py",
+      "console": "integratedTerminal"
+    },
+    {
+      "name": "Circuit: web interface (http://127.0.0.1:8765)",
+      "type": "debugpy",
+      "request": "launch",
+      "python": "C:\\Users\\jonas\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+      "program": "${workspaceFolder}/src/server.py",
+      "console": "integratedTerminal"
+    }
+  ]
+}

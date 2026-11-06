@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install dependencies (ANTLR tools and runtime 4.13.2)
+        run: python -m pip install -r requirements.txt
+      - name: Generate lexer and parser
+        run: |
+          command -v antlr4
+          bash generate.sh
+      - name: Run the test suite
+        run: python -m pytest
+      - name: Build the static site
+        run: python scripts/build_site.py

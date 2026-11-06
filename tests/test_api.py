@@ -219,7 +219,12 @@ def test_http_errors(base_url):
 
 
 def test_http_rejects_oversized_body(base_url):
-    status, _ = post(base_url, "/api/analyze", {"code": "x" * (server.MAX_BODY + 10)})
+    # The server answers 413 without reading the body, so on some systems the client sees the
+    # connection reset while it is still sending. Both outcomes mean the request was refused.
+    try:
+        status, _ = post(base_url, "/api/analyze", {"code": "x" * (server.MAX_BODY + 10)})
+    except (urllib.error.URLError, ConnectionError):
+        return
     assert status == 413
 
 

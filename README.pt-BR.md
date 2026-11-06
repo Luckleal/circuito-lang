@@ -4,6 +4,8 @@
 
 Uma linguagem pequena para descrever circuitos lógicos combinacionais.<br>Declare sinais, escreva equações booleanas e use um lexer e um parser que apontam o erro com linha e coluna.
 
+<h3><a href="https://ghostwhite-baboon-560331.hostingersite.com/">▶ Teste online</a></h3>
+
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
 ![pytest](https://img.shields.io/badge/pytest-596_testes-0A9EDC?style=flat-square&logo=pytest&logoColor=white)

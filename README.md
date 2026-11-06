@@ -4,6 +4,8 @@
 
 A small language for describing combinational logic circuits.<br>Declare signals, write boolean equations, and get a lexer and parser with precise error positions.
 
+<h3><a href="https://ghostwhite-baboon-560331.hostingersite.com/">▶ Try it online</a></h3>
+
 ![Python](https://img.shields.io/badge/Python-3-3776AB?style=flat-square&logo=python&logoColor=white)
 ![ANTLR](https://img.shields.io/badge/ANTLR-4.13.2-C41E3A?style=flat-square)
 ![pytest](https://img.shields.io/badge/pytest-596_tests-0A9EDC?style=flat-square&logo=pytest&logoColor=white)
